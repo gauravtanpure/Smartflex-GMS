@@ -12,32 +12,43 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const res = await fetch("http://localhost:8000/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (res.ok) {
-      const data = await res.json();
-      localStorage.setItem("token", data.access_token);
+    // Static Super Admin login
+    if (email === "admin@gmail.com" && password === "123") {
+      localStorage.setItem("token", "static-admin-token");
+      localStorage.setItem("username", "admin");
+      localStorage.setItem("role", "superadmin");
       navigate("/dashboard");
-    } else {
-      const errorData = await res.json();
-      alert("Login failed: " + errorData.detail);
+      return;
     }
-  } catch (err) {
-    alert("Something went wrong. Please try again.");
-  }
-};
 
+    try {
+      const res = await fetch("http://localhost:8000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("token", data.access_token);
+        const username = email.split("@")[0];
+        localStorage.setItem("username", username);
+        localStorage.setItem("role", "user");
+        navigate("/dashboard");
+      } else {
+        const errorData = await res.json();
+        alert("Login failed: " + errorData.detail);
+      }
+    } catch (err) {
+      alert("Something went wrong. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
-      {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
@@ -109,16 +120,6 @@ const handleLogin = async (e: React.FormEvent) => {
                 Sign up
               </Link>
             </div>
-
-            {/* Demo Credentials */}
-            {/* <div className="mt-6 p-4 bg-muted rounded-lg">
-              <h4 className="font-medium text-sm mb-2">Demo Credentials:</h4>
-              <div className="text-xs space-y-1 text-muted-foreground">
-                <p><strong>Member:</strong> member@smartflex.com / demo123</p>
-                <p><strong>Trainer:</strong> trainer@smartflex.com / demo123</p>
-                <p><strong>Admin:</strong> admin@smartflex.com / demo123</p>
-              </div>
-            </div> */}
           </CardContent>
         </Card>
       </div>

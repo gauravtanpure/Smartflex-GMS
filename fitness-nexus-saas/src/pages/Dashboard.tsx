@@ -2,9 +2,18 @@ import { FeeSummaryCard } from "@/components/FeeSummaryCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Calendar, Clock, Target } from "lucide-react";
+import { useEffect, useState } from "react";
 
 
 export default function Dashboard() {
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
   return (
     <div className="space-y-6">
       {/* Welcome Message */}
@@ -13,8 +22,9 @@ export default function Dashboard() {
           Hi, Welcome back
         </h1>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-          Gaurav
+          {username}
         </h2>
+
       </div>
 
       {/* Fee Summary Cards */}

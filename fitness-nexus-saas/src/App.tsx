@@ -14,6 +14,7 @@ import Fees from "./pages/Fees";
 import Exercise from "./pages/Exercise";
 import Diet from "./pages/Diet";
 import NotFound from "./pages/NotFound";
+import ManageBranches from "./pages/ManageBranches";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +37,7 @@ const App = () => (
           <Route path="/fees" element={<Layout><Fees /></Layout>} />
           <Route path="/exercise" element={<Layout><Exercise /></Layout>} />
           <Route path="/diet" element={<Layout><Diet /></Layout>} />
-          
+          <Route path="/manage-branches" element={<Layout><ManageBranches /></Layout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

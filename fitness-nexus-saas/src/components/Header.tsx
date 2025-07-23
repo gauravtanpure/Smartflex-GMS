@@ -1,6 +1,7 @@
 import { Bell, Circle, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {
   sidebarCollapsed?: boolean;
@@ -9,11 +10,18 @@ interface HeaderProps {
 
 export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
+  const [initial, setInitial] = useState("U"); // Default initial
+
+  useEffect(() => {
+    const username = localStorage.getItem("username");
+    if (username && username.length > 0) {
+      setInitial(username[0].toUpperCase());
+    }
+  }, []);
 
   const handleLogout = () => {
-    // Optional: Clear user auth data from localStorage
-    localStorage.removeItem("token"); // if using JWT
-    // Redirect to login page
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
     navigate("/login");
   };
 
@@ -27,7 +35,6 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
     >
       <div className="flex items-center justify-between px-4 lg:px-6 py-4">
         <div className="flex items-center space-x-4">
-          {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="sm"
@@ -43,23 +50,19 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-2 lg:space-x-4">
-          {/* Status Indicator */}
           <div className="hidden sm:flex items-center space-x-2 bg-white/10 rounded-full px-3 py-1">
             <Circle className="w-2 h-2 fill-red-500 text-red-500" />
             <span className="text-sm text-primary-foreground">Offline</span>
           </div>
 
-          {/* Notifications */}
           <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-white/10">
             <Bell className="w-4 h-4 lg:w-5 lg:h-5" />
           </Button>
 
-          {/* User Avatar */}
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-primary-foreground">G</span>
+            <span className="text-sm font-medium text-primary-foreground">{initial}</span>
           </div>
 
-          {/* 🚪 Logout Button */}
           <Button
             variant="ghost"
             size="sm"
