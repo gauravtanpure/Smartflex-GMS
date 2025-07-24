@@ -10,6 +10,7 @@ import {
   FileText,
   ChevronLeft,
   User,
+  GitBranch, // Import GitBranch for Manage Branches icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +34,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [username, setUsername] = useState("");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [branch, setBranch] = useState("");
+  const [branch, setBranch] = useState(""); // State to store the branch
   const location = useLocation();
 
   useEffect(() => {
@@ -41,11 +42,12 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     const role = localStorage.getItem("role");
     const storedBranch = localStorage.getItem("branch");
 
-    console.log("🔍 Retrieved role:", role); // <-- Add this line
+    console.log("🔍 Retrieved role:", role); // Helps in debugging
+    console.log("🔍 Retrieved branch:", storedBranch); // Helps in debugging
 
     if (storedUsername) setUsername(storedUsername);
-    if (role === "superadmin") setIsSuperAdmin(true);
-    if (role === "admin") setIsAdmin(true);
+    setIsSuperAdmin(role === "superadmin"); // Set boolean directly
+    setIsAdmin(role === "admin");         // Set boolean directly
     if (storedBranch) setBranch(storedBranch);
   }, []);
 
@@ -115,7 +117,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             );
           })}
 
-
+          {/* Conditional rendering for Manage Trainers for 'admin' role */}
           {isAdmin && (
             <NavLink
               to="/manage-trainers"
@@ -126,7 +128,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   : "hover:bg-muted text-foreground hover:text-foreground"
               )}
             >
-              <Users className="w-5 h-5 flex-shrink-0" />
+              <Users className="w-5 h-5 flex-shrink-0" /> {/* Reusing Users icon, or pick a new one */}
               {!collapsed && (
                 <span className="text-sm font-medium truncate">
                   Manage Trainers
@@ -135,6 +137,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </NavLink>
           )}
 
+          {/* Conditional rendering for Manage Branches for 'superadmin' role */}
           {isSuperAdmin && (
             <NavLink
               to="/manage-branches"
@@ -145,7 +148,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   : "hover:bg-muted text-foreground hover:text-foreground"
               )}
             >
-              <Users className="w-5 h-5 flex-shrink-0" />
+              <GitBranch className="w-5 h-5 flex-shrink-0" /> {/* Using GitBranch icon */}
               {!collapsed && (
                 <span className="text-sm font-medium truncate">
                   Manage Branches
@@ -163,7 +166,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{username || "User"}</p>
-                <p className="text-xs text-muted-foreground">{isSuperAdmin ? "Super Admin" : "Member"}</p>
+                <p className="text-xs text-muted-foreground">
+                    {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : "Member"}
+                </p>
               </div>
             )}
           </div>

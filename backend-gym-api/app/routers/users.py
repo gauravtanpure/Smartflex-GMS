@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .. import models, schemas, database, utils
+from .. import models, schemas, database, utils # Ensure utils is imported
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -10,14 +10,14 @@ def add_admin(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    hashed_pwd = utils.hash_password(user.password)
+    hashed_pwd = utils.get_password_hash(user.password) # Use get_password_hash from utils
     new_admin = models.User(
         name=user.name,
         email=user.email,
         password=hashed_pwd,
         phone=user.phone,
         role="admin",
-        branch=user.branch  # ✅ store branch
+        branch=user.branch  # Store branch
     )
     db.add(new_admin)
     db.commit()
@@ -34,13 +34,14 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    hashed_pwd = utils.hash_password(user.password)
+    hashed_pwd = utils.get_password_hash(user.password) # Use get_password_hash from utils
     new_user = models.User(
         name=user.name,
         email=user.email,
         password=hashed_pwd,
         phone=user.phone,
-        role=user.role
+        role=user.role,
+        branch=user.branch # Store branch for registered users too
     )
     db.add(new_user)
     db.commit()

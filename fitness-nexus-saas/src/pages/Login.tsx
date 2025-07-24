@@ -5,24 +5,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast"; // Assuming you have this for notifications
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Static Super Admin login
+    // REMOVE OR MODIFY THIS STATIC SUPER ADMIN LOGIN IF YOU RELY SOLELY ON BACKEND AUTHENTICATION
+    // This static login bypasses your backend logic and might cause confusion.
+    // If you remove it, ensure your backend registers a superadmin for testing.
+    /*
     if (email === "admin@gmail.com" && password === "123") {
       localStorage.setItem("token", "static-admin-token");
-      localStorage.setItem("username", "admin");
+      localStorage.setItem("username", "admin"); // You might want to get this from a static config too if keeping
       localStorage.setItem("role", "superadmin");
+      localStorage.setItem("branch", "Head Office"); // Static branch
       navigate("/dashboard");
+      toast({
+        title: "Login Successful",
+        description: "Logged in as Static Super Admin.",
+        variant: "success",
+      });
       return;
     }
+    */
 
     try {
       const res = await fetch("http://localhost:8000/auth/login", {
@@ -33,58 +45,63 @@ export default function Login() {
 
       if (res.ok) {
         const data = await res.json();
-        console.log("🧾 Login response data:", data); // <-- Add this to inspect
+        // Assuming your backend returns user data like {name, email, role, branch}
+        // If your backend returns a token, you'd store data.access_token instead of "some-token"
+        localStorage.setItem("token", "some-placeholder-token"); // Replace with actual token if backend sends one
+        localStorage.setItem("username", data.name);
+        localStorage.setItem("role", data.role); // Store the role from backend
+        localStorage.setItem("branch", data.branch); // Store the branch from backend
 
-        localStorage.setItem("token", data.access_token);
-        const username = email.split("@")[0];
-        localStorage.setItem("username", username);
-        localStorage.setItem("role", data.role); // <-- make sure this exists
-        localStorage.setItem("branch", data.branch);
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${data.name}!`,
+          variant: "success",
+        });
         navigate("/dashboard");
       } else {
         const errorData = await res.json();
-        alert("Login failed: " + errorData.detail);
+        toast({
+          title: "Login Failed",
+          description: errorData.detail || "Invalid credentials. Please try again.",
+          variant: "destructive",
+        });
       }
-    } catch (err) {
-      alert("Something went wrong. Please try again.");
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred during login.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-md relative">
-        <Card className="shadow-elevated border-0">
-          <CardHeader className="text-center pb-2">
-            <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-                <Dumbbell className="w-6 h-6 text-primary-foreground" />
-              </div>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <Card>
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center items-center">
+              <Dumbbell className="h-10 w-10 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+            <CardTitle className="text-3xl font-bold">Welcome Back!</CardTitle>
             <CardDescription>
-              Sign in to your SmartFlex account
+              Sign in to your account to continue
             </CardDescription>
           </CardHeader>
-
-          <CardContent className="space-y-4">
+          <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">

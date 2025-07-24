@@ -22,6 +22,8 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
+    localStorage.removeItem("role");
+    localStorage.removeItem("branch");
     navigate("/login");
   };
 
