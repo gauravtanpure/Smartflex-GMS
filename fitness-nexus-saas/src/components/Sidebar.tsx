@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+
 import {
   LayoutDashboard,
   Users,
@@ -10,7 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
@@ -30,13 +32,21 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [username, setUsername] = useState("");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [branch, setBranch] = useState("");
   const location = useLocation();
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     const role = localStorage.getItem("role");
+    const storedBranch = localStorage.getItem("branch");
+
+    console.log("🔍 Retrieved role:", role); // <-- Add this line
+
     if (storedUsername) setUsername(storedUsername);
     if (role === "superadmin") setIsSuperAdmin(true);
+    if (role === "admin") setIsAdmin(true);
+    if (storedBranch) setBranch(storedBranch);
   }, []);
 
   return (
@@ -104,6 +114,26 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
             );
           })}
+
+
+          {isAdmin && (
+            <NavLink
+              to="/manage-trainers"
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                location.pathname === "/manage-trainers"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "hover:bg-muted text-foreground hover:text-foreground"
+              )}
+            >
+              <Users className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && (
+                <span className="text-sm font-medium truncate">
+                  Manage Trainers
+                </span>
+              )}
+            </NavLink>
+          )}
 
           {isSuperAdmin && (
             <NavLink

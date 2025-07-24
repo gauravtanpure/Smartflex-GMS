@@ -33,10 +33,13 @@ export default function Login() {
 
       if (res.ok) {
         const data = await res.json();
+        console.log("🧾 Login response data:", data); // <-- Add this to inspect
+
         localStorage.setItem("token", data.access_token);
         const username = email.split("@")[0];
         localStorage.setItem("username", username);
-        localStorage.setItem("role", "user");
+        localStorage.setItem("role", data.role); // <-- make sure this exists
+        localStorage.setItem("branch", data.branch);
         navigate("/dashboard");
       } else {
         const errorData = await res.json();

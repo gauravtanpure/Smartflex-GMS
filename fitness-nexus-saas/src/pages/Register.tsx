@@ -3,8 +3,20 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
 
 export default function Register() {
@@ -16,7 +28,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     role: "",
-    phone: ""
+    phone: "",
+    branch: "", // ✅ Added branch
   });
   const navigate = useNavigate();
 
@@ -30,7 +43,6 @@ export default function Register() {
       });
 
       if (res.ok) {
-        // Success - go to login page
         navigate("/login");
       } else {
         const errorData = await res.json();
@@ -41,10 +53,8 @@ export default function Register() {
     }
   };
 
-
-
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -64,9 +74,7 @@ export default function Register() {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold">Join SmartFlex</CardTitle>
-            <CardDescription>
-              Create your account to get started
-            </CardDescription>
+            <CardDescription>Create your account to get started</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -109,7 +117,10 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => handleInputChange("role", value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
@@ -122,6 +133,23 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="branch">Branch</Label>
+                <Select
+                  value={formData.branch}
+                  onValueChange={(value) => handleInputChange("branch", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pune Branch">Pune Branch</SelectItem>
+                    <SelectItem value="Mumbai Branch">Mumbai Branch</SelectItem>
+                    <SelectItem value="Nagpur Branch">Nagpur Branch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
@@ -129,7 +157,9 @@ export default function Register() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
                     value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
                     required
                   />
                   <Button
@@ -156,7 +186,9 @@ export default function Register() {
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("confirmPassword", e.target.value)
+                    }
                     required
                   />
                   <Button
@@ -164,7 +196,9 @@ export default function Register() {
                     variant="ghost"
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -182,7 +216,10 @@ export default function Register() {
 
             <div className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium">
+              <Link
+                to="/login"
+                className="text-primary hover:underline font-medium"
+              >
                 Sign in
               </Link>
             </div>

@@ -10,3 +10,4 @@ class User(Base):
     password = Column(String)
     phone = Column(String)
     role = Column(String)
+    branch = Column(String)  # ✅ New field
