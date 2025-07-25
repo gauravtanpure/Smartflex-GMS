@@ -1,45 +1,45 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Phone, Mail, Calendar, Star } from "lucide-react";
 
-const trainers = [
-  {
-    id: 1,
-    name: "John Smith",
-    specialty: "Strength Training",
-    experience: "5 years",
-    rating: 4.8,
-    phone: "+91 98765 43210",
-    email: "john@smartflex.com",
-    availability: "Mon-Fri, 6AM-2PM",
-    image: null
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    specialty: "Yoga & Flexibility",
-    experience: "3 years",
-    rating: 4.9,
-    phone: "+91 98765 43211",
-    email: "sarah@smartflex.com",
-    availability: "Tue-Sat, 10AM-6PM",
-    image: null
-  },
-  {
-    id: 3,
-    name: "Mike Wilson",
-    specialty: "Cardio & HIIT",
-    experience: "4 years",
-    rating: 4.7,
-    phone: "+91 98765 43212",
-    email: "mike@smartflex.com",
-    availability: "Mon-Wed-Fri, 5AM-1PM",
-    image: null
-  }
-];
+interface Trainer {
+  id: number;
+  name: string;
+  specialization: string[];
+  rating: number;
+  experience: number;
+  phone: string;
+  email: string;
+  availability: string;
+  branch_name?: string;
+}
 
 export default function Trainers() {
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+
+  useEffect(() => {
+    const fetchTrainers = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:8000/trainers/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTrainers(data);
+      } else {
+        console.error("Failed to fetch trainers");
+      }
+    };
+
+    fetchTrainers();
+  }, []);
+
+  const avgRating = trainers.length
+    ? (trainers.reduce((acc, t) => acc + t.rating, 0) / trainers.length).toFixed(1)
+    : "0.0";
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -67,19 +67,21 @@ export default function Trainers() {
                 </div>
                 <div className="flex-1">
                   <CardTitle className="text-lg">{trainer.name}</CardTitle>
-                  <Badge variant="secondary" className="mt-1">
-                    {trainer.specialty}
-                  </Badge>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {trainer.specialization.map((spec, idx) => (
+                      <Badge key={idx} variant="secondary">{spec}</Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               {/* Rating */}
               <div className="flex items-center space-x-2">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 <span className="font-medium">{trainer.rating}</span>
-                <span className="text-sm text-muted-foreground">• {trainer.experience} experience</span>
+                <span className="text-sm text-muted-foreground">• {trainer.experience} years</span>
               </div>
 
               {/* Contact Info */}
@@ -119,21 +121,21 @@ export default function Trainers() {
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
               <Users className="w-6 h-6 text-primary" />
             </div>
-            <p className="font-semibold text-lg">3</p>
+            <p className="font-semibold text-lg">{trainers.length}</p>
             <p className="text-sm text-muted-foreground">Active Trainers</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4 text-center">
             <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mx-auto mb-2">
               <Star className="w-6 h-6 text-success" />
             </div>
-            <p className="font-semibold text-lg">4.8</p>
+            <p className="font-semibold text-lg">{avgRating}</p>
             <p className="text-sm text-muted-foreground">Avg Rating</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4 text-center">
             <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-2">
@@ -143,7 +145,7 @@ export default function Trainers() {
             <p className="text-sm text-muted-foreground">Sessions This Week</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4 text-center">
             <div className="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center mx-auto mb-2">

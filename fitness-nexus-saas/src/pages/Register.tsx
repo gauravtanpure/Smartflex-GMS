@@ -126,8 +126,8 @@ export default function Register() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="trainer">Trainer</SelectItem>
-                    <SelectItem value="admin">Branch Admin</SelectItem>
+                    {/* <SelectItem value="trainer">Trainer</SelectItem>
+                    <SelectItem value="admin">Branch Admin</SelectItem> */}
                   </SelectContent>
                 </Select>
               </div>

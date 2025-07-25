@@ -72,17 +72,17 @@ const App = () => {
     }
 
     // If a token exists, check role-based access
-    if (currentRole && !allowedRoles.includes(currentRole)) {
-      if (!hasShownPermissionToast) {
-        toast({
-          title: "Access Denied",
-          description: "You do not have permission to view this page.",
-          variant: "destructive",
-        });
-        setHasShownPermissionToast(true); // Mark toast as shown
-      }
-      return <Navigate to="/dashboard" replace />; // Redirect to dashboard or forbidden page
-    }
+    // if (currentRole && !allowedRoles.includes(currentRole)) {
+    //   if (!hasShownPermissionToast) {
+    //     toast({
+    //       title: "Access Denied",
+    //       description: "You do not have permission to view this page.",
+    //       variant: "destructive",
+    //     });
+    //     setHasShownPermissionToast(true); // Mark toast as shown
+    //   }
+    //   return <Navigate to="/dashboard" replace />; // Redirect to dashboard or forbidden page
+    // }
 
     // If authenticated and authorized, render the component
     return <Layout><Component /></Layout>;
