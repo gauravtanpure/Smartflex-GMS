@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster"; // Keep Toaster for other components if they use it
+import { Toaster as Sonner } from "@/components/ui/sonner"; // Keep Sonner for other components if they use it
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -16,92 +16,68 @@ import Diet from "./pages/Diet";
 import NotFound from "./pages/NotFound";
 import ManageBranches from "./pages/ManageBranches";
 import ManageTrainers from "./pages/ManageTrainers";
-import { useToast } from "@/components/ui/use-toast";
+import TrainerUsers from "./pages/TrainerUsers";
+import TrainerAttendance from "./pages/TrainerAttendance";
+// import { useToast } from "@/components/ui/use-toast"; // Removed useToast import
+import ProfileCompletion from "./pages/ProfileCompletion"; // Import the new ProfileCompletion page
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  // We'll keep these states, but renderProtectedRoute will use localStorage directly
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // This will primarily be for other App-wide logic
-  const [isLoading, setIsLoading] = useState(true); // Keep this for initial load
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed toast initialization
   const location = useLocation();
 
-  // States to prevent multiple toasts for the same unauthorized attempt
-  const [hasShownAuthToast, setHasShownAuthToast] = useState(false);
-  const [hasShownPermissionToast, setHasShownPermissionToast] = useState(false);
+  // States to prevent multiple console messages for the same unauthorized attempt
+  const [hasShownAuthMessage, setHasShownAuthMessage] = useState(false);
+  const [hasShownPermissionMessage, setHasShownPermissionMessage] = useState(false);
 
   useEffect(() => {
-    // This useEffect will now primarily synchronize internal state with localStorage for other components/logic
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-
-    setIsAuthenticated(!!token);
-    setUserRole(role);
-    setIsLoading(false); // Set false once initial localStorage check is done
-
-    // Reset toast flags on route change to allow new toasts if applicable
-    setHasShownAuthToast(false);
-    setHasShownPermissionToast(false);
-  }, [location.pathname]); // This still triggers on route changes, useful for resetting toast flags
+    // Reset message flags on route change to allow new messages if applicable
+    setHasShownAuthMessage(false);
+    setHasShownPermissionMessage(false);
+  }, [location.pathname]);
 
   // Helper function to render protected routes
   const renderProtectedRoute = (Component: React.ElementType, allowedRoles: string[]) => {
-    // Read directly from localStorage for the most up-to-date authentication status
     const currentToken = localStorage.getItem("token");
     const currentRole = localStorage.getItem("role");
 
-    // No need for isLoading check here as we're relying on currentToken
-    // If you have a global loading spinner for ALL initial app load, keep isLoading
-    // For protected routes, direct token check is more immediate.
-    // if (isLoading) {
-    //   return <div>Loading...</div>; // Or a spinner
-    // }
-
-    if (!currentToken) { // If NO token is found, redirect to login
-      if (!hasShownAuthToast) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to access this page.",
-          variant: "destructive",
-        });
-        setHasShownAuthToast(true); // Mark toast as shown
+    if (!currentToken) {
+      if (!hasShownAuthMessage) {
+        console.warn("Authentication Required: Please log in to access this page."); // Replaced toast with console.warn
+        setHasShownAuthMessage(true);
       }
       return <Navigate to="/login" replace />;
     }
 
-    // If a token exists, check role-based access
-    // if (currentRole && !allowedRoles.includes(currentRole)) {
-    //   if (!hasShownPermissionToast) {
-    //     toast({
-    //       title: "Access Denied",
-    //       description: "You do not have permission to view this page.",
-    //       variant: "destructive",
-    //     });
-    //     setHasShownPermissionToast(true); // Mark toast as shown
-    //   }
-    //   return <Navigate to="/dashboard" replace />; // Redirect to dashboard or forbidden page
-    // }
+    if (currentRole && !allowedRoles.includes(currentRole)) {
+      if (!hasShownPermissionMessage) {
+        console.warn("Access Denied: You do not have permission to view this page."); // Replaced toast with console.warn
+        setHasShownPermissionMessage(true);
+      }
+      return <Navigate to="/dashboard" replace />;
+    }
 
-    // If authenticated and authorized, render the component
     return <Layout><Component /></Layout>;
   };
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
+        <Toaster /> {/* Keep Toaster */}
+        <Sonner /> {/* Keep Sonner */}
         <Routes>
           {/* Auth routes */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Protected Routes - Use renderProtectedRoute for all */}
-          <Route path="/dashboard" element={renderProtectedRoute(Dashboard, ["member", "admin", "superadmin"])} />
-          <Route path="/trainers" element={renderProtectedRoute(Trainers, ["member", "admin", "superadmin"])} />
+          {/* New Profile Completion Route */}
+          <Route path="/profile-completion" element={renderProtectedRoute(ProfileCompletion, ["member", "admin", "superadmin", "trainer"])} />
+
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={renderProtectedRoute(Dashboard, ["member", "admin", "superadmin", "trainer"])} />
+          <Route path="/trainers" element={renderProtectedRoute(Trainers, ["member", "admin", "superadmin", "trainer"])} />
           <Route path="/attendance" element={renderProtectedRoute(Attendance, ["member", "admin", "superadmin"])} />
           <Route path="/fees" element={renderProtectedRoute(Fees, ["member", "admin", "superadmin"])} />
           <Route path="/exercise" element={renderProtectedRoute(Exercise, ["member", "admin", "superadmin"])} />
@@ -119,7 +95,17 @@ const App = () => {
             element={renderProtectedRoute(ManageBranches, ["superadmin"])}
           />
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* New Protected Routes for Trainers */}
+          <Route
+            path="/trainer/users"
+            element={renderProtectedRoute(TrainerUsers, ["trainer", "admin", "superadmin"])}
+          />
+          <Route
+            path="/trainer/attendance"
+            element={renderProtectedRoute(TrainerAttendance, ["trainer", "admin", "superadmin"])}
+          />
+
+          {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>

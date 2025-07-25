@@ -1,5 +1,6 @@
+// src/components/Sidebar.tsx
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom"; // Import useNavigate
 
 import {
   LayoutDashboard,
@@ -10,18 +11,21 @@ import {
   FileText,
   ChevronLeft,
   User,
-  GitBranch, // Import GitBranch for Manage Branches icon
+  GitBranch,
+  UserCheck, // New icon for Manage Attendance
+  UserCog, // Icon for Profile Completion (not directly used for link, but good to keep if needed elsewhere)
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { title: "Trainers", icon: Users, href: "/trainers" },
-  { title: "My Attendance", icon: Calendar, href: "/attendance" },
-  { title: "My Fees", icon: CreditCard, href: "/fees" },
-  { title: "My Exercise", icon: Dumbbell, href: "/exercise" },
-  { title: "My Diet Sheet", icon: FileText, href: "/diet" },
+  // These routes will be conditionally displayed or restricted based on role
+  // For members: My Attendance, My Fees, My Exercise, My Diet Sheet
+  // For trainers: Trainer specific (See Users, Manage Attendance)
+  // For admins: Manage Trainers
+  // For superadmins: Manage Branches
+  { title: "Trainers", icon: Users, href: "/trainers" }, // Generally visible for all to see trainers
 ];
 
 interface SidebarProps {
@@ -32,24 +36,35 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [username, setUsername] = useState("");
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [branch, setBranch] = useState(""); // State to store the branch
+  const [userRole, setUserRole] = useState<string | null>(null); // Use a single state for role
+  const [branch, setBranch] = useState("");
   const location = useLocation();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     const role = localStorage.getItem("role");
     const storedBranch = localStorage.getItem("branch");
 
-    console.log("🔍 Retrieved role:", role); // Helps in debugging
-    console.log("🔍 Retrieved branch:", storedBranch); // Helps in debugging
-
     if (storedUsername) setUsername(storedUsername);
-    setIsSuperAdmin(role === "superadmin"); // Set boolean directly
-    setIsAdmin(role === "admin");         // Set boolean directly
+    if (role) setUserRole(role);
     if (storedBranch) setBranch(storedBranch);
   }, []);
+
+  const isSuperAdmin = userRole === "superadmin";
+  const isAdmin = userRole === "admin";
+  const isTrainer = userRole === "trainer";
+  const isMember = userRole === "member";
+
+  const handleProfileClick = () => {
+    if (isMember) { // Only allow members to navigate to profile completion
+      navigate("/profile-completion");
+      if (onMobileClose) { // Close sidebar on mobile after navigation
+        onMobileClose();
+      }
+    }
+  };
+
 
   return (
     <>
@@ -92,30 +107,156 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         </div>
 
         <nav className="p-4 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.href;
+          {/* Dashboard is for everyone */}
+          <NavLink
+            to="/dashboard"
+            className={cn(
+              "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+              location.pathname === "/dashboard"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "hover:bg-muted text-foreground hover:text-foreground"
+            )}
+          >
+            <LayoutDashboard className={cn("w-5 h-5 flex-shrink-0")} />
+            {!collapsed && (
+              <span className="text-sm font-medium truncate">
+                Dashboard
+              </span>
+            )}
+          </NavLink>
 
-            return (
+          {/* Profile Completion link removed from here */}
+
+
+          {/* Regular user/member menu items */}
+          {isMember && (
+            <>
               <NavLink
-                key={item.href}
-                to={item.href}
+                to="/attendance"
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                  isActive
+                  location.pathname === "/attendance"
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-muted text-foreground hover:text-foreground"
                 )}
               >
-                <Icon className={cn("w-5 h-5 flex-shrink-0")} />
+                <Calendar className="w-5 h-5 flex-shrink-0" />
                 {!collapsed && (
                   <span className="text-sm font-medium truncate">
-                    {item.title}
+                    My Attendance
                   </span>
                 )}
               </NavLink>
-            );
-          })}
+              <NavLink
+                to="/fees"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/fees"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-muted text-foreground hover:text-foreground"
+                )}
+              >
+                <CreditCard className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">
+                    My Fees
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="/exercise"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/exercise"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-muted text-foreground hover:text-foreground"
+                )}
+              >
+                <Dumbbell className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">
+                    My Exercise
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="/diet"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/diet"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-muted text-foreground hover:text-foreground"
+                )}
+              >
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">
+                    My Diet Sheet
+                  </span>
+                )}
+              </NavLink>
+            </>
+          )}
+
+          {/* Trainers page is generally visible for members to see trainers,
+              and also for admins/superadmins to manage them.
+              Trainers themselves might not need to see this, or could see a filtered list.
+              For now, let's keep it generally accessible, but define specific trainer views below.
+          */}
+          <NavLink
+            to="/trainers"
+            className={cn(
+              "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+              location.pathname === "/trainers"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "hover:bg-muted text-foreground hover:text-foreground"
+            )}
+          >
+            <Users className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && (
+              <span className="text-sm font-medium truncate">
+                Trainers
+              </span>
+            )}
+          </NavLink>
+
+          {/* Conditional rendering for Trainer specific options */}
+          {isTrainer && (
+            <>
+              <NavLink
+                to="/trainer/users"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/trainer/users"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-muted text-foreground hover:text-foreground"
+                )}
+              >
+                <Users className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">
+                    See My Branch Users
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="/trainer/attendance"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/trainer/attendance"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-muted text-foreground hover:text-foreground"
+                )}
+              >
+                <UserCheck className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">
+                    Manage My Branch Attendance
+                  </span>
+                )}
+              </NavLink>
+            </>
+          )}
 
           {/* Conditional rendering for Manage Trainers for 'admin' role */}
           {isAdmin && (
@@ -128,7 +269,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   : "hover:bg-muted text-foreground hover:text-foreground"
               )}
             >
-              <Users className="w-5 h-5 flex-shrink-0" /> {/* Reusing Users icon, or pick a new one */}
+              <Users className="w-5 h-5 flex-shrink-0" />
               {!collapsed && (
                 <span className="text-sm font-medium truncate">
                   Manage Trainers
@@ -148,7 +289,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   : "hover:bg-muted text-foreground hover:text-foreground"
               )}
             >
-              <GitBranch className="w-5 h-5 flex-shrink-0" /> {/* Using GitBranch icon */}
+              <GitBranch className="w-5 h-5 flex-shrink-0" />
               {!collapsed && (
                 <span className="text-sm font-medium truncate">
                   Manage Branches
@@ -158,7 +299,13 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           )}
         </nav>
 
-        <div className="absolute bottom-4 left-4 right-4">
+        <div
+          className={cn(
+            "absolute bottom-4 left-4 right-4",
+            isMember && "cursor-pointer" // Add cursor-pointer for members
+          )}
+          onClick={handleProfileClick} // Add onClick handler here
+        >
           <div className={cn("flex items-center space-x-3 p-3 rounded-lg bg-muted/50", collapsed && "justify-center")}>
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <User className="w-4 h-4 text-primary-foreground" />
@@ -167,7 +314,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{username || "User"}</p>
                 <p className="text-xs text-muted-foreground">
-                    {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : "Member"}
+                    {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : isTrainer ? `Trainer (${branch || 'No Branch'})` : "Member"}
                 </p>
               </div>
             )}

@@ -1,3 +1,4 @@
+// src/pages/Login.tsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast"; // Assuming you have this for notifications
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,45 +18,25 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // REMOVE OR MODIFY THIS STATIC SUPER ADMIN LOGIN IF YOU RELY SOLELY ON BACKEND AUTHENTICATION
-    // This static login bypasses your backend logic and might cause confusion.
-    // If you remove it, ensure your backend registers a superadmin for testing.
-    /*
-    if (email === "admin@gmail.com" && password === "123") {
-      localStorage.setItem("token", "static-admin-token");
-      localStorage.setItem("username", "admin"); // You might want to get this from a static config too if keeping
-      localStorage.setItem("role", "superadmin");
-      localStorage.setItem("branch", "Head Office"); // Static branch
-      navigate("/dashboard");
-      toast({
-        title: "Login Successful",
-        description: "Logged in as Static Super Admin.",
-        variant: "success",
-      });
-      return;
-    }
-    */
-
     try {
       const res = await fetch("http://localhost:8000/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ username: email, password: password }).toString(),
       });
 
       if (res.ok) {
         const data = await res.json();
-        // Assuming your backend returns user data like {name, email, role, branch}
-        // If your backend returns a token, you'd store data.access_token instead of "some-token"
-        localStorage.setItem("token", "some-placeholder-token"); // Replace with actual token if backend sends one
-        localStorage.setItem("username", data.name);
-        localStorage.setItem("role", data.role); // Store the role from backend
-        localStorage.setItem("branch", data.branch); // Store the branch from backend
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("username", data.user_data.name);
+        localStorage.setItem("role", data.user_data.role);
+        localStorage.setItem("branch", data.user_data.branch || "");
+        localStorage.setItem("user_id", data.user_data.id); // Store the user ID here
 
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${data.name}!`,
-          variant: "success",
+          description: `Welcome back, ${data.user_data.name}!`,
+          variant: "default",
         });
         navigate("/dashboard");
       } else {
