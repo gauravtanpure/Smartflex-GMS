@@ -1,3 +1,4 @@
+// src/pages/Register.tsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast"; // Import useToast
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,30 +28,65 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    confirmPassword: "", // Keep client-side for validation
     role: "",
     phone: "",
-    branch: "", // ✅ Added branch
+    branch: "",
   });
   const navigate = useNavigate();
+  const { toast } = useToast(); // Initialize toast
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation for password match
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Registration Failed",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare data for backend (exclude confirmPassword)
+    const dataToSend = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role,
+      phone: formData.phone,
+      branch: formData.branch,
+    };
+
     try {
-      const res = await fetch("http://localhost:8000/users/register", {
+      // --- CRITICAL CORRECTION HERE: Change the URL to /users/ ---
+      const res = await fetch("http://localhost:8000/users/", { // Corrected endpoint
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend), // Send dataToSend
       });
 
       if (res.ok) {
+        toast({
+          title: "Registration Successful",
+          description: "Your account has been created. You can now log in.",
+        });
         navigate("/login");
       } else {
         const errorData = await res.json();
-        alert("Registration failed: " + errorData.detail);
+        toast({
+          title: "Registration Failed",
+          description: errorData.detail || "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
       }
-    } catch (err) {
-      alert("Something went wrong. Please try again.");
+    } catch (err: any) {
+      toast({
+        title: "Network Error",
+        description: "Could not connect to the server. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -120,14 +157,16 @@ export default function Register() {
                 <Select
                   value={formData.role}
                   onValueChange={(value) => handleInputChange("role", value)}
+                  required // Make role selection required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="member">Member</SelectItem>
-                    {/* <SelectItem value="trainer">Trainer</SelectItem>
-                    <SelectItem value="admin">Branch Admin</SelectItem> */}
+                    {/* Trainer and Admin roles are typically assigned by an admin, not during self-registration */}
+                    {/* <SelectItem value="trainer">Trainer</SelectItem> */}
+                    {/* <SelectItem value="admin">Branch Admin</SelectItem> */}
                   </SelectContent>
                 </Select>
               </div>
@@ -137,6 +176,7 @@ export default function Register() {
                 <Select
                   value={formData.branch}
                   onValueChange={(value) => handleInputChange("branch", value)}
+                  required // Make branch selection required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your branch" />
