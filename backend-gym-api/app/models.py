@@ -44,3 +44,63 @@ class UserAttendance(Base): # New Model for User Attendance
 
     # Define relationship to User model
     # user = relationship("User", back_populates="attendance_records")
+
+# models.py
+class Member(Base):
+    __tablename__ = "members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    # Section A
+    name_full = Column(String)
+    surname = Column(String)
+    first_name = Column(String)
+    fathers_name = Column(String)
+
+    # Residential Address
+    res_flat_no = Column(String)
+    res_wing = Column(String)
+    res_floor = Column(String)
+    res_bldg_name = Column(String)
+    res_street = Column(String)
+    res_landmark = Column(String)
+    res_area = Column(String)
+    res_pin_code = Column(String)
+
+    # Office Address
+    off_office_no = Column(String)
+    off_wing = Column(String)
+    off_floor = Column(String)
+    off_bldg_name = Column(String)
+    off_street = Column(String)
+    off_landmark = Column(String)
+    off_area = Column(String)
+    off_pin_code = Column(String)
+
+    telephone_res = Column(String)
+    telephone_office = Column(String)
+    mobile = Column(String)
+    email = Column(String)
+    date_of_birth = Column(String)
+    blood_group = Column(String)
+    marital_status = Column(String)
+    wedding_anniversary_date = Column(String)
+
+    reference1 = Column(String)
+    reference2 = Column(String)
+
+    # Section B
+    physician_name = Column(String)
+    physician_contact = Column(String)
+    physician_mobile = Column(String)
+    physician_tel = Column(String)
+    medications = Column(String)
+    participating_in_exercise_program_reason = Column(String)
+    describe_physical_activity = Column(String)
+    any_other_condition_detail = Column(String)
+    comments = Column(String)
+
+    # Section C
+    informed_consent_agreed = Column(String)
+    rules_regulations_agreed = Column(String)

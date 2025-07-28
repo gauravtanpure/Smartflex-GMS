@@ -185,75 +185,127 @@ export default function ProfileCompletion() {
   // Fetch existing profile data if available
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("user_id"); // Assuming user_id is stored in localStorage
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("user_id");
 
-      if (!token || !userId) {
-        toast({
-          title: "Error",
-          description: "Authentication token or User ID missing. Please log in.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
+    if (!token || !userId) {
+      toast({
+        title: "Error",
+        description: "Authentication token or User ID missing. Please log in.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // 1. Get basic user data
+      const resUser = await fetch(`http://localhost:8000/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!resUser.ok) throw new Error("User fetch failed");
+      const userData = await resUser.json();
+      
+
+      // 2. Get extended member data
+      const resMember = await fetch(`http://localhost:8000/users/member/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      let memberData = {};
+      if (resMember.status === 200) {
+        memberData = await resMember.json();
+      } else if (resMember.status === 404) {
+        // No profile yet — keep form empty
+        console.log("No member profile found. User can now fill it.");
+      } else {
+        throw new Error("Unexpected error while fetching member profile.");
       }
 
-      try {
-        const res = await fetch(`http://localhost:8000/users/${userId}`, { // Assuming an endpoint to get user details by ID
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
 
-        if (res.ok) {
-          const data = await res.json();
-          // Map fetched data to your profile state. This will require careful mapping
-          // if your backend schema for user details is different from this form.
-          // For simplicity, I'm assuming a direct mapping for now.
-          setProfile(prev => ({
-            ...prev,
-            name_full: data.name || "", // Assuming 'name' from backend is full name
-            email: data.email || prev.email,
-            mobile: data.phone || "", // Assuming 'phone' from backend is mobile
-            // ... map other fields as necessary from 'data'
-            // For nested objects like addresses, you'll need to map each sub-field
-            // Example: residential_address: { ...data.residential_address }
-            // If backend doesn't return these, they will remain empty from initial state
-          }));
-          // Calculate and store completion percentage after fetching profile
-          const percentage = calculateCompletionPercentage({
-            ...profile, // Use current profile state as base
-            name_full: data.name || "",
-            email: data.email || profile.email,
-            mobile: data.phone || "",
-            // Add other fetched fields here if they are part of your completion logic
-          });
-          localStorage.setItem("profile_completion_percentage", percentage.toString());
+      // 3. Set the profile state from backend response
+      setProfile(prev => ({
+        ...prev,
+        name_full: memberData.name_full || "",
+        surname: memberData.surname || "",
+        first_name: memberData.first_name || "",
+        fathers_name: memberData.fathers_name || "",
+        residential_address: {
+          flat_no: memberData.res_flat_no || "",
+          wing: memberData.res_wing || "",
+          floor: memberData.res_floor || "",
+          bldg_name: memberData.res_bldg_name || "",
+          street: memberData.res_street || "",
+          landmark: memberData.res_landmark || "",
+          area: memberData.res_area || "",
+          pin_code: memberData.res_pin_code || "",
+        },
+        office_address: {
+          office_no: memberData.off_office_no || "",
+          wing: memberData.off_wing || "",
+          floor: memberData.off_floor || "",
+          bldg_name: memberData.off_bldg_name || "",
+          street: memberData.off_street || "",
+          landmark: memberData.off_landmark || "",
+          area: memberData.off_area || "",
+          pin_code: memberData.off_pin_code || "",
+        },
+        telephone_res: memberData.telephone_res || "",
+        telephone_office: memberData.telephone_office || "",
+        mobile: memberData.mobile || userData.phone || "",
+        email: memberData.email || userData.email || "",
+        date_of_birth: memberData.date_of_birth || "",
+        blood_group: memberData.blood_group || "",
+        marital_status: memberData.marital_status || "",
+        wedding_anniversary_date: memberData.wedding_anniversary_date || "",
+        references: [memberData.reference1 || "", memberData.reference2 || ""],
+        physician_name: memberData.physician_name || "",
+        physician_contact: memberData.physician_contact || "",
+        physician_mobile: memberData.physician_mobile || "",
+        physician_tel: memberData.physician_tel || "",
+        medications: memberData.medications || "",
+        participating_in_exercise_program_reason: memberData.participating_in_exercise_program_reason || "",
+        describe_physical_activity: memberData.describe_physical_activity || "",
+        do_you_have_condition: {
+          ...prev.do_you_have_condition,
+          any_other_specific_peculiar_detail: memberData.any_other_condition_detail || "",
+        },
+        comments: memberData.comments || "",
+        informed_consent_agreed: memberData.informed_consent_agreed || false,
+        rules_regulations_agreed: memberData.rules_regulations_agreed || false,
+      }));
 
+      // 4. Calculate and save percentage
+      const percent = calculateCompletionPercentage({
+        ...profile,
+        name_full: memberData.name_full || "",
+        email: userData.email || "",
+        mobile: userData.phone || "",
+        // You can pass other fields too
+      });
+      localStorage.setItem("profile_completion_percentage", percent.toString());
 
-          toast({
-            title: "Profile Loaded",
-            description: "Existing profile data has been loaded.",
-            variant: "success",
-          });
-        } else {
-          // If profile not found, it's a new user or first time completion
-          toast({
-            title: "Info",
-            description: "No existing profile found. Please complete your profile.",
-            variant: "info",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile data.",
-          variant: "destructive",
-        });
-      }
-    };
+      toast({
+        title: "Profile Loaded",
+        description: "Your saved profile has been loaded.",
+        variant: "success",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch profile data.",
+        variant: "destructive",
+      });
+      console.error(err);
+    }
+  };
     fetchProfile();
   }, [navigate, toast]);
 
@@ -337,9 +389,6 @@ export default function ProfileCompletion() {
     }
 
     try {
-      // This will require a new backend endpoint to update user profiles with all these details.
-      // For now, we'll use the existing /users/{user_id} PUT endpoint, but it only accepts UserCreate schema.
-      // You will need to extend your backend to handle a more comprehensive UserProfileUpdate schema.
       const res = await fetch(`http://localhost:8000/users/${userId}`, {
         method: "PUT",
         headers: {
@@ -347,17 +396,75 @@ export default function ProfileCompletion() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: profile.name_full, // Or combine first_name and surname
+          name: profile.name_full,
           email: profile.email,
-          phone: profile.mobile, // Map mobile to phone
-          // role and branch should not be updated by user directly
-          // You'll need to define how to send complex objects like addresses and medical info
-          // For now, sending only basic fields that match existing UserCreate schema
+          phone: profile.mobile,
         }),
       });
 
       if (res.ok) {
-        // Ensure percentage is updated one last time after successful save
+        // Save full profile to members table
+        const memberRes = await fetch("http://localhost:8000/users/profile-complete", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: parseInt(userId),
+            name_full: profile.name_full,
+            surname: profile.surname,
+            first_name: profile.first_name,
+            fathers_name: profile.fathers_name,
+            res_flat_no: profile.residential_address.flat_no,
+            res_wing: profile.residential_address.wing,
+            res_floor: profile.residential_address.floor,
+            res_bldg_name: profile.residential_address.bldg_name,
+            res_street: profile.residential_address.street,
+            res_landmark: profile.residential_address.landmark,
+            res_area: profile.residential_address.area,
+            res_pin_code: profile.residential_address.pin_code,
+            off_office_no: profile.office_address.office_no,
+            off_wing: profile.office_address.wing,
+            off_floor: profile.office_address.floor,
+            off_bldg_name: profile.office_address.bldg_name,
+            off_street: profile.office_address.street,
+            off_landmark: profile.office_address.landmark,
+            off_area: profile.office_address.area,
+            off_pin_code: profile.office_address.pin_code,
+            telephone_res: profile.telephone_res,
+            telephone_office: profile.telephone_office,
+            mobile: profile.mobile,
+            email: profile.email,
+            date_of_birth: profile.date_of_birth,
+            blood_group: profile.blood_group,
+            marital_status: profile.marital_status,
+            wedding_anniversary_date: profile.wedding_anniversary_date,
+            reference1: profile.references[0],
+            reference2: profile.references[1],
+            physician_name: profile.physician_name,
+            physician_contact: profile.physician_contact,
+            physician_mobile: profile.physician_mobile,
+            physician_tel: profile.physician_tel,
+            medications: profile.medications,
+            participating_in_exercise_program_reason: profile.participating_in_exercise_program_reason,
+            describe_physical_activity: profile.describe_physical_activity,
+            any_other_condition_detail: profile.do_you_have_condition.any_other_specific_peculiar_detail,
+            comments: profile.comments,
+            informed_consent_agreed: profile.informed_consent_agreed,
+            rules_regulations_agreed: profile.rules_regulations_agreed,
+          }),
+        });
+
+        if (!memberRes.ok) {
+          const memberError = await memberRes.json();
+          toast({
+            title: "Member Profile Save Failed",
+            description: memberError.detail || "Could not save detailed profile.",
+            variant: "destructive",
+          });
+        }
+
         const percentage = calculateCompletionPercentage(profile);
         localStorage.setItem("profile_completion_percentage", percentage.toString());
 
@@ -366,7 +473,7 @@ export default function ProfileCompletion() {
           description: "Your profile has been successfully updated!",
           variant: "success",
         });
-        navigate("/dashboard"); // Redirect to dashboard after saving
+        navigate("/dashboard");
       } else {
         const errorData = await res.json();
         toast({
@@ -384,6 +491,7 @@ export default function ProfileCompletion() {
       });
     }
   };
+
 
   const openRulesAndRegulations = () => {
     const rulesText = `

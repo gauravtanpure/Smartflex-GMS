@@ -24,6 +24,8 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
     localStorage.removeItem("username");
     localStorage.removeItem("role");
     localStorage.removeItem("branch");
+    localStorage.removeItem("profile_completion_percentage");
+    localStorage.removeItem("user_id");
     navigate("/login");
   };
 

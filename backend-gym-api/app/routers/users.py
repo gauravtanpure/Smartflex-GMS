@@ -263,19 +263,19 @@ def get_user(user_id: int, db: Session = Depends(database.get_db)):
 
 # Endpoint to update a user by ID
 @router.put("/{user_id}", response_model=schemas.UserResponse)
-def update_user(user_id: int, user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(database.get_db)):
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    db_user.name = user.name
-    db_user.email = user.email
-    # Only update password if provided and different
-    if user.password:
-        db_user.password = utils.get_password_hash(user.password)
-    db_user.phone = user.phone
-    db_user.role = user.role
-    db_user.branch = user.branch
+    if user.name is not None:
+        db_user.name = user.name
+    if user.email is not None:
+        db_user.email = user.email
+    if user.phone is not None:
+        db_user.phone = user.phone
+
+    # ❌ DO NOT update password, role, or branch here unless explicitly needed
 
     db.commit()
     db.refresh(db_user)
@@ -291,3 +291,22 @@ def delete_user(user_id: int, db: Session = Depends(database.get_db)):
     db.delete(db_user)
     db.commit()
     return {"message": "User deleted successfully"}
+
+@router.post("/profile-complete")
+def save_profile_data(member: schemas.MemberCreate, db: Session = Depends(database.get_db)):
+    existing = db.query(models.Member).filter(models.Member.user_id == member.user_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Profile already exists")
+
+    new_member = models.Member(**member.dict())
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+    return {"message": "Profile data saved successfully"}
+
+@router.get("/member/{user_id}")
+def get_member_profile(user_id: int, db: Session = Depends(database.get_db)):
+    member = db.query(models.Member).filter(models.Member.user_id == user_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member profile not found")
+    return member

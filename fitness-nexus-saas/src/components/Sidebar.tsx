@@ -38,6 +38,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [username, setUsername] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null); // Use a single state for role
   const [branch, setBranch] = useState("");
+  const [profileCompletion, setProfileCompletion] = useState<string | null>(null); // New state for profile completion
   const location = useLocation();
   const navigate = useNavigate(); // Initialize useNavigate
 
@@ -45,11 +46,27 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     const storedUsername = localStorage.getItem("username");
     const role = localStorage.getItem("role");
     const storedBranch = localStorage.getItem("branch");
+    const storedProfileCompletion = localStorage.getItem("profile_completion_percentage"); // Retrieve completion percentage
 
     if (storedUsername) setUsername(storedUsername);
     if (role) setUserRole(role);
     if (storedBranch) setBranch(storedBranch);
+    if (storedProfileCompletion) setProfileCompletion(storedProfileCompletion);
   }, []);
+
+  // Effect to listen for changes in localStorage for profile completion
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const storedProfileCompletion = localStorage.getItem("profile_completion_percentage");
+      setProfileCompletion(storedProfileCompletion);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
 
   const isSuperAdmin = userRole === "superadmin";
   const isAdmin = userRole === "admin";
@@ -124,9 +141,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </span>
             )}
           </NavLink>
-
-          {/* Profile Completion link removed from here */}
-
 
           {/* Regular user/member menu items */}
           {isMember && (
@@ -314,7 +328,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{username || "User"}</p>
                 <p className="text-xs text-muted-foreground">
-                    {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : isTrainer ? `Trainer (${branch || 'No Branch'})` : "Member"}
+                    {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : isTrainer ? `Trainer (${branch || 'No Branch'})` : `Member (${profileCompletion || '0'}%)`}
                 </p>
               </div>
             )}
