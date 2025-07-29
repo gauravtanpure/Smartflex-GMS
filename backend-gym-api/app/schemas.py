@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from datetime import date # Import date for attendance date field
+from datetime import date, time # Import date and time for attendance date and session times
 
 
 class UserCreate(BaseModel):
@@ -86,6 +86,49 @@ class UserAttendanceResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+# --- New Schemas for Session Schedule ---
+class SessionScheduleCreate(BaseModel):
+    session_name: str
+    session_date: date
+    start_time: time
+    end_time: time
+    max_capacity: int
+    description: Optional[str] = None
+
+class SessionScheduleResponse(BaseModel):
+    id: int
+    trainer_id: int
+    session_name: str
+    session_date: date
+    start_time: time
+    end_time: time
+    branch_name: Optional[str]
+    max_capacity: int
+    description: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+# --- New Schemas for Session Attendance ---
+class SessionAttendanceCreate(BaseModel):
+    session_id: int
+    user_id: int
+    status: str # e.g., "present", "absent", "late"
+    attendance_date: date
+
+class SessionAttendanceResponse(BaseModel):
+    id: int
+    session_id: int
+    user_id: int
+    status: str
+    attendance_date: date
+    # Include user details for easier display in frontend
+    user: UserResponse # Nested UserResponse schema
+
+    class Config:
+        orm_mode = True
+
 
 class MemberCreate(BaseModel):
     user_id: int

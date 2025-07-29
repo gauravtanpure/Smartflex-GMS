@@ -18,13 +18,12 @@ import ManageBranches from "./pages/ManageBranches";
 import ManageTrainers from "./pages/ManageTrainers";
 import TrainerUsers from "./pages/TrainerUsers";
 import TrainerAttendance from "./pages/TrainerAttendance";
-// import { useToast } from "@/components/ui/use-toast"; // Removed useToast import
-import ProfileCompletion from "./pages/ProfileCompletion"; // Import the new ProfileCompletion page
+import ProfileCompletion from "./pages/ProfileCompletion";
+import ManageSessions from "./pages/ManageSessions"; // Import the new ManageSessions page
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  // const { toast } = useToast(); // Removed toast initialization
   const location = useLocation();
 
   // States to prevent multiple console messages for the same unauthorized attempt
@@ -103,6 +102,11 @@ const App = () => {
           <Route
             path="/trainer/attendance"
             element={renderProtectedRoute(TrainerAttendance, ["trainer", "admin", "superadmin"])}
+          />
+          {/* New Protected Route for Manage Sessions (Accessible by 'trainer', 'admin', 'superadmin') */}
+          <Route
+            path="/trainer/sessions"
+            element={renderProtectedRoute(ManageSessions, ["trainer", "admin", "superadmin"])}
           />
 
           {/* Catch-all route */}

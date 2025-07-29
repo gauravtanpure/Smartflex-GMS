@@ -1,5 +1,5 @@
 # backend/models.py
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey # Import Date and ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Time # Import Time
 from sqlalchemy.orm import relationship # Import relationship
 from .database import Base
 
@@ -32,6 +32,9 @@ class Trainer(Base):
     availability = Column(String, nullable=True)
     branch_name = Column(String, nullable=True) # Branch to which the trainer belongs
 
+    # Add relationship to SessionSchedule
+    sessions = relationship("SessionSchedule", back_populates="trainer")
+
 
 class UserAttendance(Base): # New Model for User Attendance
     __tablename__ = "user_attendance"
@@ -44,6 +47,40 @@ class UserAttendance(Base): # New Model for User Attendance
 
     # Define relationship to User model
     # user = relationship("User", back_populates="attendance_records")
+
+# New Model for Session Schedules
+class SessionSchedule(Base):
+    __tablename__ = "session_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trainer_id = Column(Integer, ForeignKey("trainers.id"), nullable=False)
+    session_name = Column(String, nullable=False)
+    session_date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    branch_name = Column(String, nullable=True) # Branch where the session is held
+    max_capacity = Column(Integer, default=0)
+    description = Column(String, nullable=True)
+
+    # Define relationships
+    trainer = relationship("Trainer", back_populates="sessions")
+    session_attendances = relationship("SessionAttendance", back_populates="session", cascade="all, delete-orphan")
+
+
+# New Model for Session Attendance
+class SessionAttendance(Base):
+    __tablename__ = "session_attendance"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("session_schedules.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(String, nullable=False) # e.g., "present", "absent", "late"
+    attendance_date = Column(Date, nullable=False) # Date when attendance was marked for the session
+
+    # Define relationships
+    session = relationship("SessionSchedule", back_populates="session_attendances")
+    user = relationship("User") # Link to User model
+
 
 # models.py
 class Member(Base):
