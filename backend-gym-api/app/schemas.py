@@ -187,3 +187,64 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+
+
+from datetime import datetime
+
+class FeeAssignmentCreate(BaseModel):
+    user_id: int
+    fee_type: str
+    amount: float
+    due_date: date
+
+class FeeAssignmentResponse(BaseModel):
+    id: int
+    user_id: int
+    assigned_by_user_id: int
+    branch_name: str
+    fee_type: str
+    amount: float
+    due_date: date
+    is_paid: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class FeeAssignmentUpdate(BaseModel):
+    fee_type: Optional[str] = None
+    amount: Optional[float] = None
+    due_date: Optional[date] = None
+    is_paid: Optional[bool] = None
+
+class UserNotificationCreate(BaseModel):
+    user_id: int
+    message: str
+    notification_type: Optional[str] = None
+
+class UserNotificationResponse(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    notification_type: Optional[str]
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class UserNotificationUpdate(BaseModel):
+    is_read: bool
+
+class UserFeesResponse(BaseModel):
+    id: int
+    fee_type: str
+    amount: float
+    due_date: date
+    is_paid: bool
+    assigned_by_name: str
+    branch_name: str
+
+    class Config:
+        orm_mode = True

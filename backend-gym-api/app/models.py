@@ -141,3 +141,36 @@ class Member(Base):
     # Section C
     informed_consent_agreed = Column(String)
     rules_regulations_agreed = Column(String)
+
+
+from sqlalchemy import Boolean, DateTime, func
+
+class FeeAssignment(Base):
+    __tablename__ = "fee_assignments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    assigned_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    branch_name = Column(String, nullable=False)
+    fee_type = Column(String, nullable=False)
+    amount = Column(Float, nullable=False)
+    due_date = Column(Date, nullable=False)
+    is_paid = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    assigned_by = relationship("User", foreign_keys=[assigned_by_user_id])
+
+
+class UserNotification(Base):
+    __tablename__ = "user_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    message = Column(String, nullable=False)
+    notification_type = Column(String, nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+
+    user = relationship("User")

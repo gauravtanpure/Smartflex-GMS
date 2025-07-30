@@ -19,3 +19,8 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(trainers.router)  # ⬅️ Add this line
+
+from .routers import fee_management  # ⬅️ Import the new file you'll create
+
+app.include_router(fee_management.router)  # ⬅️ Register router
+

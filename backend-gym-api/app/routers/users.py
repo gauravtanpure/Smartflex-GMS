@@ -30,6 +30,17 @@ def get_current_trainer(
         )
     return current_user
 
+# NEW DEPENDENCY: Allows access for admin, superadmin, or trainer
+def get_current_admin_or_trainer(
+    current_user: schemas.UserResponse = Depends(get_current_active_user)
+):
+    if current_user.role not in ["admin", "superadmin", "trainer"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to perform this action. Only branch admins, superadmins, or trainers can access this.",
+        )
+    return current_user
+
 # --- General User Endpoints (most specific first, then more general) ---
 
 # Endpoint to create a new user (including admin/trainer roles)
@@ -59,19 +70,21 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
 @router.get("/branch-users", response_model=List[schemas.UserResponse])
 def get_users_by_branch(
     db: Session = Depends(database.get_db),
-    current_trainer: schemas.UserResponse = Depends(get_current_trainer), # Use the trainer dependency
+    # UPDATED: Use the new dependency to allow admin/superadmin/trainer
+    current_user_role: schemas.UserResponse = Depends(get_current_admin_or_trainer),
 ):
     """
-    Allows a trainer to see all users in their assigned branch.
+    Allows a trainer, admin, or superadmin to see all users in their assigned branch.
     """
-    trainer_branch = current_trainer.branch
-    if not trainer_branch:
+    # Use current_user_role.branch as it can be admin, superadmin or trainer
+    user_branch = current_user_role.branch
+    if not user_branch:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Trainer's branch not specified.",
+            detail="User's branch not specified.", # Changed message to be more general
         )
 
-    users = db.query(models.User).filter(models.User.branch == trainer_branch).all()
+    users = db.query(models.User).filter(models.User.branch == user_branch).all()
     return users
 
 @router.get("/branch-attendance", response_model=List[schemas.UserAttendanceResponse]) # Use schemas.UserAttendanceResponse

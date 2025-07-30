@@ -143,6 +143,26 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             )}
           </NavLink>
 
+          {/* Conditional rendering for Manage Fees for 'admin' role */}
+          {isAdmin && (
+            <NavLink
+              to="/manage-fees"
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                location.pathname === "/manage-fees"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "hover:bg-muted text-foreground hover:text-foreground"
+              )}
+            >
+              <CreditCard className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && (
+                <span className="text-sm font-medium truncate">
+                  Manage Fees
+                </span>
+              )}
+            </NavLink>
+          )}
+
           {/* Regular user/member menu items */}
           {isMember && (
             <>

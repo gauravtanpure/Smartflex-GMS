@@ -19,6 +19,7 @@ import ManageTrainers from "./pages/ManageTrainers";
 import TrainerUsers from "./pages/TrainerUsers";
 import TrainerAttendance from "./pages/TrainerAttendance";
 import ProfileCompletion from "./pages/ProfileCompletion";
+import ManageFees from "./pages/ManageFees";
 import ManageSessions from "./pages/ManageSessions"; // Import the new ManageSessions page
 
 const queryClient = new QueryClient();
@@ -108,6 +109,7 @@ const App = () => {
             path="/trainer/sessions"
             element={renderProtectedRoute(ManageSessions, ["trainer", "admin", "superadmin"])}
           />
+          <Route path="/manage-fees" element={renderProtectedRoute(ManageFees, ["admin", "superadmin"])} />
 
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
