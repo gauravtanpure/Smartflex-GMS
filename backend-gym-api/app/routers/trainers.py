@@ -30,6 +30,18 @@ def get_current_trainer(
         )
     return current_user
 
+# NEW DEPENDENCY: Allows access for admin or superadmin
+def get_current_admin_or_superadmin(
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
+):
+    if current_user.role not in ["admin", "superadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to perform this action. Only admins or superadmins can access this.",
+        )
+    return current_user
+
+
 # IMPORTANT: Put specific routes BEFORE parameterized routes to avoid conflicts
 
 # --- Session Management Endpoints (Trainer Role Only) - PUT THESE FIRST ---
@@ -796,7 +808,11 @@ def get_trainer_exercise_plans(
 # --- Trainer CRUD Endpoints (PUT THESE AFTER SESSION ROUTES) ---
 
 @router.post("/add-trainer", response_model=schemas.TrainerResponse)
-def add_trainer(trainer: schemas.TrainerCreate, db: Session = Depends(database.get_db)):
+def add_trainer(
+    trainer: schemas.TrainerCreate,
+    db: Session = Depends(database.get_db),
+    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin), # Add this dependency
+):
     existing_trainer = db.query(models.Trainer).filter(models.Trainer.email == trainer.email).first()
     if existing_trainer:
         raise HTTPException(status_code=400, detail="Trainer with this email already exists.")
@@ -812,7 +828,7 @@ def add_trainer(trainer: schemas.TrainerCreate, db: Session = Depends(database.g
         email=trainer.email,
         password=hashed_password,  # ✅ Store hashed password
         availability=trainer.availability,
-        branch_name=trainer.branch_name,
+        branch_name=current_admin.branch if current_admin.role == "admin" else trainer.branch_name, # Assign to admin's branch or allow superadmin to specify
     )
 
     db.add(new_trainer)
@@ -823,8 +839,36 @@ def add_trainer(trainer: schemas.TrainerCreate, db: Session = Depends(database.g
 
 # GET all trainers - this should come before the specific trainer route
 @router.get("/", response_model=list[schemas.TrainerResponse])
-def get_trainers(db: Session = Depends(database.get_db)):
-    trainers = db.query(models.Trainer).all()
+def get_trainers(
+    db: Session = Depends(database.get_db),
+    current_user: schemas.UserResponse = Depends(get_current_active_user), # Changed to get_current_active_user
+):
+    """
+    Allows all authenticated users to view trainers.
+    Admins will see trainers in their branch. Superadmins will see all trainers.
+    """
+    query = db.query(models.Trainer)
+
+    # Apply filtering based on user role
+    if current_user.role == "admin":
+        if not current_user.branch:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Admin's branch not specified."
+            )
+        query = query.filter(models.Trainer.branch_name == current_user.branch)
+    elif current_user.role == "superadmin":
+        # Superadmins see all trainers, no additional filter needed
+        pass
+    else:
+        # Members and Trainers only see trainers in their own branch if they have one
+        # This assumes non-admin/superadmin users also have a 'branch' attribute
+        # If not, adjust logic to show all or restrict as needed
+        if current_user.branch:
+            query = query.filter(models.Trainer.branch_name == current_user.branch)
+
+
+    trainers = query.all()
     for t in trainers:
         t.specialization = t.specialization.split(",") if isinstance(t.specialization, str) and t.specialization else []
     return trainers
