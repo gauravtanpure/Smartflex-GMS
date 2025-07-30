@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Toaster } from "@/components/ui/toaster"; // Keep Toaster for other components if they use it
-import { Toaster as Sonner } from "@/components/ui/sonner"; // Keep Sonner for other components if they use it
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -11,8 +11,6 @@ import Dashboard from "./pages/Dashboard";
 import Trainers from "./pages/Trainers";
 import Attendance from "./pages/Attendance";
 import Fees from "./pages/Fees";
-import Exercise from "./pages/Exercise";
-import Diet from "./pages/Diet";
 import NotFound from "./pages/NotFound";
 import ManageBranches from "./pages/ManageBranches";
 import ManageTrainers from "./pages/ManageTrainers";
@@ -20,68 +18,75 @@ import TrainerUsers from "./pages/TrainerUsers";
 import TrainerAttendance from "./pages/TrainerAttendance";
 import ProfileCompletion from "./pages/ProfileCompletion";
 import ManageFees from "./pages/ManageFees";
-import ManageSessions from "./pages/ManageSessions"; // Import the new ManageSessions page
+import ManageSessions from "./pages/ManageSessions";
+// New imports for trainer assignment pages
+import AssignDiet from "./pages/AssignDiet";
+import AssignExercise from "./pages/AssignExercise";
+// New imports for member viewing pages
+import MyDiet from "./pages/MyDiet";
+import MyExercise from "./pages/MyExercise";
+
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const location = useLocation();
 
-  // States to prevent multiple console messages for the same unauthorized attempt
-  const [hasShownAuthMessage, setHasShownAuthMessage] = useState(false);
-  const [hasShownPermissionMessage, setHasShownPermissionMessage] = useState(false);
+  const [hasShownAuthError, setHasShownAuthError] = useState(false);
 
-  useEffect(() => {
-    // Reset message flags on route change to allow new messages if applicable
-    setHasShownAuthMessage(false);
-    setHasShownPermissionMessage(false);
-  }, [location.pathname]);
-
-  // Helper function to render protected routes
+  // Helper function for protected routes
   const renderProtectedRoute = (Component: React.ElementType, allowedRoles: string[]) => {
-    const currentToken = localStorage.getItem("token");
-    const currentRole = localStorage.getItem("role");
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
 
-    if (!currentToken) {
-      if (!hasShownAuthMessage) {
-        console.warn("Authentication Required: Please log in to access this page."); // Replaced toast with console.warn
-        setHasShownAuthMessage(true);
+    if (!token) {
+      if (!hasShownAuthError && location.pathname !== '/login' && location.pathname !== '/register') {
+        console.warn("Unauthorized access: No token found.");
+        setHasShownAuthError(true);
       }
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/login" replace />; //
     }
 
-    if (currentRole && !allowedRoles.includes(currentRole)) {
-      if (!hasShownPermissionMessage) {
-        console.warn("Access Denied: You do not have permission to view this page."); // Replaced toast with console.warn
-        setHasShownPermissionMessage(true);
+    if (role && allowedRoles.includes(role)) {
+      // REMOVED: setHasShownAuthError(false);
+      // This line was causing an infinite re-render loop because it would
+      // trigger a re-render on every successful authorization check.
+      return (
+        <Layout>
+          <Component />
+        </Layout>
+      );
+    } else {
+      if (!hasShownAuthError) {
+        console.warn(`Unauthorized access: Role '${role}' not allowed for this route. Required roles: ${allowedRoles.join(', ')}`);
+        setHasShownAuthError(true);
       }
+      // Redirect to dashboard or a specific unauthorized page
       return <Navigate to="/dashboard" replace />;
     }
-
-    return <Layout><Component /></Layout>;
   };
 
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster />
+      <Sonner />
       <TooltipProvider>
-        <Toaster /> {/* Keep Toaster */}
-        <Sonner /> {/* Keep Sonner */}
         <Routes>
-          {/* Auth routes */}
-          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
-          {/* New Profile Completion Route */}
-          <Route path="/profile-completion" element={renderProtectedRoute(ProfileCompletion, ["member", "admin", "superadmin", "trainer"])} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           {/* Protected Routes */}
-          <Route path="/dashboard" element={renderProtectedRoute(Dashboard, ["member", "admin", "superadmin", "trainer"])} />
-          <Route path="/trainers" element={renderProtectedRoute(Trainers, ["member", "admin", "superadmin", "trainer"])} />
+          <Route path="/dashboard" element={renderProtectedRoute(Dashboard, ["member", "trainer", "admin", "superadmin"])} />
+          <Route path="/trainers" element={renderProtectedRoute(Trainers, ["member", "trainer", "admin", "superadmin"])} />
           <Route path="/attendance" element={renderProtectedRoute(Attendance, ["member", "admin", "superadmin"])} />
           <Route path="/fees" element={renderProtectedRoute(Fees, ["member", "admin", "superadmin"])} />
-          <Route path="/exercise" element={renderProtectedRoute(Exercise, ["member", "admin", "superadmin"])} />
-          <Route path="/diet" element={renderProtectedRoute(Diet, ["member", "admin", "superadmin"])} />
+          <Route path="/profile-completion" element={renderProtectedRoute(ProfileCompletion, ["member", "trainer", "admin", "superadmin"])} />
+
+          {/* Member Specific Tabs - Renamed from original Exercise/Diet */}
+          <Route path="/my-exercise" element={renderProtectedRoute(MyExercise, ["member", "admin", "superadmin"])} /> {/* */}
+          <Route path="/my-diet" element={renderProtectedRoute(MyDiet, ["member", "admin", "superadmin"])} /> {/* */}
+
 
           {/* Protected Route for Manage Trainers (Accessible by 'admin' and 'superadmin') */}
           <Route
@@ -95,7 +100,7 @@ const App = () => {
             element={renderProtectedRoute(ManageBranches, ["superadmin"])}
           />
 
-          {/* New Protected Routes for Trainers */}
+          {/* Protected Routes for Trainers */}
           <Route
             path="/trainer/users"
             element={renderProtectedRoute(TrainerUsers, ["trainer", "admin", "superadmin"])}
@@ -104,12 +109,21 @@ const App = () => {
             path="/trainer/attendance"
             element={renderProtectedRoute(TrainerAttendance, ["trainer", "admin", "superadmin"])}
           />
-          {/* New Protected Route for Manage Sessions (Accessible by 'trainer', 'admin', 'superadmin') */}
           <Route
             path="/trainer/sessions"
             element={renderProtectedRoute(ManageSessions, ["trainer", "admin", "superadmin"])}
           />
           <Route path="/manage-fees" element={renderProtectedRoute(ManageFees, ["admin", "superadmin"])} />
+
+          {/* NEW Protected Routes for Trainer: Assign Diet and Exercise */}
+          <Route
+            path="/trainer/assign-diet"
+            element={renderProtectedRoute(AssignDiet, ["trainer", "admin", "superadmin"])}
+          /> {/* */}
+          <Route
+            path="/trainer/assign-exercise"
+            element={renderProtectedRoute(AssignExercise, ["trainer", "admin", "superadmin"])}
+          /> {/* */}
 
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />

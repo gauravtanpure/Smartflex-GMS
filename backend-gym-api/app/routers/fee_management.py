@@ -1,4 +1,4 @@
-# routers/fee_management.py
+# backend/routers/fee_management.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -44,18 +44,17 @@ def assign_fee(
     db.refresh(new_fee)
     return new_fee
 
+# NEW ENDPOINT: Get all fee assignments for a branch (admin/superadmin only)
 @router.get("/branch", response_model=List[schemas.FeeAssignmentResponse])
 def get_branch_fees(
     db: Session = Depends(database.get_db),
     current_admin: schemas.UserResponse = Depends(get_current_admin), # Only admins/superadmins can access this
     user_id: Optional[int] = None, # Optional filter by user ID
-    is_paid: Optional[bool] = None, # Optional filter by paid status
-    search_query: Optional[str] = None # New optional search query
+    is_paid: Optional[bool] = None # Optional filter by paid status
 ):
     """
     Allows branch admins and superadmins to view fee assignments for their branch.
     Superadmins can see fees from all branches.
-    Can filter by user ID, paid status, and search query (user name or email).
     """
     query = db.query(models.FeeAssignment).join(models.User, models.FeeAssignment.user_id == models.User.id) # Join with User model
 
@@ -69,14 +68,6 @@ def get_branch_fees(
         query = query.filter(models.FeeAssignment.user_id == user_id)
     if is_paid is not None:
         query = query.filter(models.FeeAssignment.is_paid == is_paid)
-    
-    if search_query:
-        # Filter by user name or email (case-insensitive)
-        search_pattern = f"%{search_query}%"
-        query = query.filter(
-            (models.User.name.ilike(search_pattern)) |
-            (models.User.email.ilike(search_pattern))
-        )
 
     fees = query.all()
 
@@ -87,7 +78,7 @@ def get_branch_fees(
     for fee_assignment in fees:
         user_data = db.query(models.User).filter(models.User.id == fee_assignment.user_id).first()
         if user_data:
-            fee_assignment_dict = fee_assignment.__dict__
+            fee_assignment_dict = fee_assignment.__dict__.copy() # Ensure we're working with a copy
             fee_assignment_dict['user'] = schemas.UserResponse(
                 id=user_data.id,
                 name=user_data.name,
@@ -101,6 +92,7 @@ def get_branch_fees(
             result.append(schemas.FeeAssignmentResponse.from_orm(fee_assignment)) # Fallback if user not found (shouldn't happen with FK)
     return result
 
+# NEW ENDPOINT: Update fee status (admin/superadmin only)
 @router.put("/{fee_id}/status", response_model=schemas.FeeAssignmentResponse)
 def update_fee_status(
     fee_id: int,
@@ -130,7 +122,23 @@ def update_fee_status(
 
     db.commit()
     db.refresh(db_fee)
-    return db_fee
+    
+    # Manually populate the 'user' field before returning
+    user_data = db.query(models.User).filter(models.User.id == db_fee.user_id).first()
+    if user_data:
+        db_fee_dict = db_fee.__dict__.copy()
+        db_fee_dict['user'] = schemas.UserResponse(
+            id=user_data.id,
+            name=user_data.name,
+            email=user_data.email,
+            phone=user_data.phone,
+            role=user_data.role,
+            branch=user_data.branch
+        )
+        return schemas.FeeAssignmentResponse(**db_fee_dict)
+    else:
+        # Fallback if user not found (should not happen if FKs are respected)
+        return schemas.FeeAssignmentResponse.from_orm(db_fee)
 
 
 @router.get("/my-fees", response_model=List[schemas.UserFeesResponse])
@@ -160,7 +168,6 @@ def get_user_notifications(
 ):
     return db.query(models.UserNotification).filter(models.UserNotification.user_id == current_user.id).order_by(models.UserNotification.created_at.desc()).all()
 
-# NEW ENDPOINT: Mark all notifications as read for the current user
 @router.put("/notifications/mark-all-read", response_model=List[schemas.UserNotificationResponse])
 def mark_all_notifications_read(
     db: Session = Depends(database.get_db),
@@ -171,13 +178,13 @@ def mark_all_notifications_read(
     """
     notifications_to_update = db.query(models.UserNotification).filter(
         models.UserNotification.user_id == current_user.id,
-        models.UserNotification.is_read == False #
+        models.UserNotification.is_read == False
     ).all()
 
     for notif in notifications_to_update:
-        notif.is_read = True #
+        notif.is_read = True
 
-    db.commit() #
+    db.commit()
 
     # Refresh all notifications to return the updated list
     return db.query(models.UserNotification).filter(models.UserNotification.user_id == current_user.id).order_by(models.UserNotification.created_at.desc()).all()

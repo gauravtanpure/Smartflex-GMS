@@ -1,3 +1,4 @@
+# routers/trainers.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -408,7 +409,389 @@ def delete_session_attendance(
 
     db.delete(db_attendance)
     db.commit()
-    return {"message": "Attendance record deleted successfully"}
+    return {"message": "Session deleted successfully"}
+
+# --- New Endpoints for Diet Plans (Trainer Only) ---
+@router.post("/diet-plans", response_model=schemas.DietPlanResponse)
+def create_diet_plan(
+    diet_plan: schemas.DietPlanCreate,
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer)
+):
+    """
+    Allows a trainer to assign a new diet plan to a user in their branch.
+    """
+    user = db.query(models.User).filter(
+        models.User.id == diet_plan.user_id,
+        models.User.branch == current_trainer.branch
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found in trainer's branch or does not exist."
+        )
+
+    new_diet_plan = models.DietPlan(
+        user_id=diet_plan.user_id,
+        assigned_by_trainer_id=current_trainer.id,
+        title=diet_plan.title,
+        description=diet_plan.description,
+        expiry_date=diet_plan.expiry_date,
+        branch_name=current_trainer.branch
+    )
+    db.add(new_diet_plan)
+    db.commit()
+    db.refresh(new_diet_plan)
+
+    # Manually populate relationships for the response, ensuring specialization is a list
+    # Fetch the full trainer object from the DB to get its specialization string
+    trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
+    if trainer_data:
+        # Convert specialization string to a list for the response schema
+        trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+        trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
+    else:
+        # Fallback if trainer_data somehow isn't found (shouldn't happen here)
+        trainer_schema = schemas.TrainerResponse(
+            id=current_trainer.id,
+            name=current_trainer.name,
+            specialization=[], # Default to empty list
+            rating=0.0, experience=0, phone="", email="", availability=None, branch_name=current_trainer.branch
+        )
+    
+    # Construct the DietPlanResponse
+    return schemas.DietPlanResponse(
+        id=new_diet_plan.id,
+        user_id=new_diet_plan.user_id,
+        assigned_by_trainer_id=new_diet_plan.assigned_by_trainer_id,
+        title=new_diet_plan.title,
+        description=new_diet_plan.description,
+        assigned_date=new_diet_plan.assigned_date,
+        expiry_date=new_diet_plan.expiry_date,
+        branch_name=new_diet_plan.branch_name,
+        user=schemas.UserResponse.from_orm(user), # Use the fetched 'user' object
+        assigned_by_trainer=trainer_schema
+    )
+
+@router.put("/diet-plans/{plan_id}", response_model=schemas.DietPlanResponse)
+def update_diet_plan(
+    plan_id: int,
+    diet_plan_update: schemas.DietPlanCreate, # Re-use create schema for update payload
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer)
+):
+    """
+    Allows a trainer to update a diet plan they have assigned.
+    Ensures the plan belongs to the current trainer and their branch.
+    """
+    db_diet_plan = db.query(models.DietPlan).filter(
+        models.DietPlan.id == plan_id,
+        models.DietPlan.assigned_by_trainer_id == current_trainer.id,
+        models.DietPlan.branch_name == current_trainer.branch
+    ).first()
+
+    if not db_diet_plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Diet plan not found or not assigned by this trainer in this branch."
+        )
+
+    # Ensure user_id is not changed if it's part of the update payload (or handle carefully)
+    if diet_plan_update.user_id != db_diet_plan.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User of a diet plan cannot be changed after assignment."
+        )
+
+    db_diet_plan.title = diet_plan_update.title
+    db_diet_plan.description = diet_plan_update.description
+    db_diet_plan.expiry_date = diet_plan_update.expiry_date
+
+    db.commit()
+    db.refresh(db_diet_plan)
+
+    # Manually populate relationships for the response as done in create_diet_plan
+    user = db.query(models.User).filter(models.User.id == db_diet_plan.user_id).first()
+    trainer_data = db.query(models.Trainer).filter(models.Trainer.id == db_diet_plan.assigned_by_trainer_id).first()
+    if trainer_data:
+        trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+        trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
+    else:
+        trainer_schema = schemas.TrainerResponse(
+            id=db_diet_plan.assigned_by_trainer_id, name="Unknown Trainer", specialization=[], rating=0.0, experience=0, phone="", email="", availability=None, branch_name=None
+        )
+
+    return schemas.DietPlanResponse(
+        id=db_diet_plan.id,
+        user_id=db_diet_plan.user_id,
+        assigned_by_trainer_id=db_diet_plan.assigned_by_trainer_id,
+        title=db_diet_plan.title,
+        description=db_diet_plan.description,
+        assigned_date=db_diet_plan.assigned_date,
+        expiry_date=db_diet_plan.expiry_date,
+        branch_name=db_diet_plan.branch_name,
+        user=schemas.UserResponse.from_orm(user),
+        assigned_by_trainer=trainer_schema
+    )
+
+@router.delete("/diet-plans/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_diet_plan(
+    plan_id: int,
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer)
+):
+    """
+    Allows a trainer to delete a diet plan they have assigned.
+    Ensures the plan belongs to the current trainer and their branch.
+    """
+    db_diet_plan = db.query(models.DietPlan).filter(
+        models.DietPlan.id == plan_id,
+        models.DietPlan.assigned_by_trainer_id == current_trainer.id,
+        models.DietPlan.branch_name == current_trainer.branch
+    ).first()
+
+    if not db_diet_plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Diet plan not found or not assigned by this trainer in this branch."
+        )
+
+    db.delete(db_diet_plan)
+    db.commit()
+    return {"message": "Diet plan deleted successfully"}
+
+
+@router.get("/diet-plans", response_model=List[schemas.DietPlanResponse])
+def get_trainer_diet_plans(
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer),
+    user_id: Optional[int] = None # Filter by user ID
+):
+    """
+    Allows a trainer to view diet plans assigned by them, optionally filtered by user.
+    """
+    query = db.query(models.DietPlan).filter(
+        models.DietPlan.assigned_by_trainer_id == current_trainer.id,
+        models.DietPlan.branch_name == current_trainer.branch
+    ).join(models.User, models.DietPlan.user_id == models.User.id) # Eager load user
+    
+    if user_id:
+        query = query.filter(models.DietPlan.user_id == user_id)
+
+    diet_plans = query.all()
+
+    # Manually populate relationships for the response, ensuring specialization is a list
+    result = []
+    trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
+    # Ensure trainer_data.specialization is processed before passing to schema
+    if trainer_data:
+        trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+        trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
+    else:
+        trainer_schema = schemas.TrainerResponse(
+            id=current_trainer.id,
+            name=current_trainer.name,
+            specialization=[],
+            rating=0.0, experience=0, phone="", email="", availability=None, branch_name=current_trainer.branch
+        )
+
+    for dp in diet_plans:
+        dp_dict = dp.__dict__.copy() # Create a copy to modify
+        dp_dict['user'] = schemas.UserResponse.from_orm(db.query(models.User).filter(models.User.id == dp.user_id).first())
+        dp_dict['assigned_by_trainer'] = trainer_schema
+        result.append(schemas.DietPlanResponse(**dp_dict))
+    return result
+
+# --- New Endpoints for Exercise Plans (Trainer Only) ---
+@router.post("/exercise-plans", response_model=schemas.ExercisePlanResponse)
+def create_exercise_plan(
+    exercise_plan: schemas.ExercisePlanCreate,
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer)
+):
+    """
+    Allows a trainer to assign a new exercise plan to a user in their branch.
+    """
+    user = db.query(models.User).filter(
+        models.User.id == exercise_plan.user_id,
+        models.User.branch == current_trainer.branch
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found in trainer's branch or does not exist."
+        )
+
+    new_exercise_plan = models.ExercisePlan(
+        user_id=exercise_plan.user_id,
+        assigned_by_trainer_id=current_trainer.id,
+        title=exercise_plan.title,
+        description=exercise_plan.description,
+        expiry_date=exercise_plan.expiry_date,
+        branch_name=current_trainer.branch
+    )
+    db.add(new_exercise_plan)
+    db.commit()
+    db.refresh(new_exercise_plan)
+
+    # Manually populate relationships for the response, ensuring specialization is a list
+    trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
+    if trainer_data:
+        trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+        trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
+    else:
+        trainer_schema = schemas.TrainerResponse(
+            id=current_trainer.id,
+            name=current_trainer.name,
+            specialization=[],
+            rating=0.0, experience=0, phone="", email="", availability=None, branch_name=current_trainer.branch
+        )
+
+    # Construct the ExercisePlanResponse
+    return schemas.ExercisePlanResponse(
+        id=new_exercise_plan.id,
+        user_id=new_exercise_plan.user_id,
+        assigned_by_trainer_id=new_exercise_plan.assigned_by_trainer_id,
+        title=new_exercise_plan.title,
+        description=new_exercise_plan.description,
+        assigned_date=new_exercise_plan.assigned_date,
+        expiry_date=new_exercise_plan.expiry_date,
+        branch_name=new_exercise_plan.branch_name,
+        user=schemas.UserResponse.from_orm(user),
+        assigned_by_trainer=trainer_schema
+    )
+
+@router.put("/exercise-plans/{plan_id}", response_model=schemas.ExercisePlanResponse)
+def update_exercise_plan(
+    plan_id: int,
+    exercise_plan_update: schemas.ExercisePlanCreate, # Re-use create schema for update payload
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer)
+):
+    """
+    Allows a trainer to update an exercise plan they have assigned.
+    Ensures the plan belongs to the current trainer and their branch.
+    """
+    db_exercise_plan = db.query(models.ExercisePlan).filter(
+        models.ExercisePlan.id == plan_id,
+        models.ExercisePlan.assigned_by_trainer_id == current_trainer.id,
+        models.ExercisePlan.branch_name == current_trainer.branch
+    ).first()
+
+    if not db_exercise_plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exercise plan not found or not assigned by this trainer in this branch."
+        )
+    
+    # Ensure user_id is not changed if it's part of the update payload
+    if exercise_plan_update.user_id != db_exercise_plan.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User of an exercise plan cannot be changed after assignment."
+        )
+
+    db_exercise_plan.title = exercise_plan_update.title
+    db_exercise_plan.description = exercise_plan_update.description
+    db_exercise_plan.expiry_date = exercise_plan_update.expiry_date
+
+    db.commit()
+    db.refresh(db_exercise_plan)
+
+    # Manually populate relationships for the response as done in create_exercise_plan
+    user = db.query(models.User).filter(models.User.id == db_exercise_plan.user_id).first()
+    trainer_data = db.query(models.Trainer).filter(models.Trainer.id == db_exercise_plan.assigned_by_trainer_id).first()
+    if trainer_data:
+        trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+        trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
+    else:
+        trainer_schema = schemas.TrainerResponse(
+            id=db_exercise_plan.assigned_by_trainer_id, name="Unknown Trainer", specialization=[], rating=0.0, experience=0, phone="", email="", availability=None, branch_name=None
+        )
+
+    return schemas.ExercisePlanResponse(
+        id=db_exercise_plan.id,
+        user_id=db_exercise_plan.user_id,
+        assigned_by_trainer_id=db_exercise_plan.assigned_by_trainer_id,
+        title=db_exercise_plan.title,
+        description=db_exercise_plan.description,
+        assigned_date=db_exercise_plan.assigned_date,
+        expiry_date=db_exercise_plan.expiry_date,
+        branch_name=db_exercise_plan.branch_name,
+        user=schemas.UserResponse.from_orm(user),
+        assigned_by_trainer=trainer_schema
+    )
+
+@router.delete("/exercise-plans/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_exercise_plan(
+    plan_id: int,
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer)
+):
+    """
+    Allows a trainer to delete an exercise plan they have assigned.
+    Ensures the plan belongs to the current trainer and their branch.
+    """
+    db_exercise_plan = db.query(models.ExercisePlan).filter(
+        models.ExercisePlan.id == plan_id,
+        models.ExercisePlan.assigned_by_trainer_id == current_trainer.id,
+        models.ExercisePlan.branch_name == current_trainer.branch
+    ).first()
+
+    if not db_exercise_plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exercise plan not found or not assigned by this trainer in this branch."
+        )
+
+    db.delete(db_exercise_plan)
+    db.commit()
+    return {"message": "Exercise plan deleted successfully"}
+
+
+@router.get("/exercise-plans", response_model=List[schemas.ExercisePlanResponse])
+def get_trainer_exercise_plans(
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer),
+    user_id: Optional[int] = None # Filter by user ID
+):
+    """
+    Allows a trainer to view exercise plans assigned by them, optionally filtered by user.
+    """
+    query = db.query(models.ExercisePlan).filter(
+        models.ExercisePlan.assigned_by_trainer_id == current_trainer.id,
+        models.ExercisePlan.branch_name == current_trainer.branch
+    ).join(models.User, models.ExercisePlan.user_id == models.User.id) # Eager load user
+    
+    if user_id:
+        query = query.filter(models.ExercisePlan.user_id == user_id)
+
+    exercise_plans = query.all()
+
+    # Manually populate relationships for the response, ensuring specialization is a list
+    result = []
+    trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
+    # Ensure trainer_data.specialization is processed before passing to schema
+    if trainer_data:
+        trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+        trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
+    else:
+        trainer_schema = schemas.TrainerResponse(
+            id=current_trainer.id,
+            name=current_trainer.name,
+            specialization=[],
+            rating=0.0, experience=0, phone="", email="", availability=None, branch_name=current_trainer.branch
+        )
+
+    for ep in exercise_plans:
+        ep_dict = ep.__dict__.copy() # Create a copy to modify
+        ep_dict['user'] = schemas.UserResponse.from_orm(db.query(models.User).filter(models.User.id == ep.user_id).first())
+        ep_dict['assigned_by_trainer'] = trainer_schema
+        result.append(schemas.ExercisePlanResponse(**ep_dict))
+    return result
+
 
 # --- Trainer CRUD Endpoints (PUT THESE AFTER SESSION ROUTES) ---
 
@@ -443,7 +826,7 @@ def add_trainer(trainer: schemas.TrainerCreate, db: Session = Depends(database.g
 def get_trainers(db: Session = Depends(database.get_db)):
     trainers = db.query(models.Trainer).all()
     for t in trainers:
-        t.specialization = t.specialization.split(",")
+        t.specialization = t.specialization.split(",") if isinstance(t.specialization, str) and t.specialization else []
     return trainers
 
 # GET single trainer by ID - MUST come after other specific routes
@@ -455,7 +838,7 @@ def get_trainer_by_id(trainer_id: int, db: Session = Depends(database.get_db)):
     trainer = db.query(models.Trainer).filter(models.Trainer.id == trainer_id).first()
     if not trainer:
         raise HTTPException(status_code=404, detail="Trainer not found")
-    trainer.specialization = trainer.specialization.split(",") # Ensure specialization is a list
+    trainer.specialization = trainer.specialization.split(",") if isinstance(trainer.specialization, str) and trainer.specialization else []
     return trainer
 
 @router.put("/{trainer_id}", response_model=schemas.TrainerResponse)

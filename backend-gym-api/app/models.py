@@ -1,7 +1,8 @@
 # backend/models.py
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Time # Import Time
-from sqlalchemy.orm import relationship # Import relationship
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Time
+from sqlalchemy.orm import relationship
 from .database import Base
+from sqlalchemy import Boolean, DateTime, func # Keep these imports
 
 class User(Base):
     __tablename__ = "users"
@@ -11,11 +12,16 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String)
     phone = Column(String)
-    role = Column(String, default="member") # e.g., "member", "admin", "superadmin", "trainer"
-    branch = Column(String, nullable=True) # Branch to which the user belongs
+    role = Column(String, default="member")
+    branch = Column(String, nullable=True)
 
-    # If you want to link attendance records to users
-    # attendance_records = relationship("UserAttendance", back_populates="user")
+    # Add relationships for diet and exercise plans
+    diet_plans = relationship("DietPlan", back_populates="user")
+    exercise_plans = relationship("ExercisePlan", back_populates="user")
+    fee_assignments = relationship("FeeAssignment", foreign_keys="[FeeAssignment.user_id]", back_populates="user_assigned_to")
+    assigned_fees = relationship("FeeAssignment", foreign_keys="[FeeAssignment.assigned_by_user_id]", back_populates="assigned_by_user")
+    session_attendances = relationship("SessionAttendance", back_populates="user")
+    user_notifications = relationship("UserNotification", back_populates="user")
 
 
 class Trainer(Base):
@@ -30,10 +36,46 @@ class Trainer(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
     availability = Column(String, nullable=True)
-    branch_name = Column(String, nullable=True) # Branch to which the trainer belongs
+    branch_name = Column(String, nullable=True)
 
-    # Add relationship to SessionSchedule
     sessions = relationship("SessionSchedule", back_populates="trainer")
+    # Add relationships for diet and exercise plans assigned by this trainer
+    assigned_diet_plans = relationship("DietPlan", back_populates="assigned_by_trainer")
+    assigned_exercise_plans = relationship("ExercisePlan", back_populates="assigned_by_trainer")
+
+
+# New Model for Diet Plan
+class DietPlan(Base):
+    __tablename__ = "diet_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    assigned_by_trainer_id = Column(Integer, ForeignKey("trainers.id"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    assigned_date = Column(Date, default=func.now())
+    expiry_date = Column(Date, nullable=True) # Optional expiry date
+    branch_name = Column(String, nullable=True) # Store branch for filtering
+
+    user = relationship("User", back_populates="diet_plans")
+    assigned_by_trainer = relationship("Trainer", back_populates="assigned_diet_plans")
+
+
+# New Model for Exercise Plan
+class ExercisePlan(Base):
+    __tablename__ = "exercise_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    assigned_by_trainer_id = Column(Integer, ForeignKey("trainers.id"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    assigned_date = Column(Date, default=func.now())
+    expiry_date = Column(Date, nullable=True) # Optional expiry date
+    branch_name = Column(String, nullable=True) # Store branch for filtering
+
+    user = relationship("User", back_populates="exercise_plans")
+    assigned_by_trainer = relationship("Trainer", back_populates="assigned_exercise_plans")
 
 
 class UserAttendance(Base): # New Model for User Attendance
@@ -143,8 +185,6 @@ class Member(Base):
     rules_regulations_agreed = Column(String)
 
 
-from sqlalchemy import Boolean, DateTime, func
-
 class FeeAssignment(Base):
     __tablename__ = "fee_assignments"
 
@@ -159,8 +199,8 @@ class FeeAssignment(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-    user = relationship("User", foreign_keys=[user_id])
-    assigned_by = relationship("User", foreign_keys=[assigned_by_user_id])
+    user_assigned_to = relationship("User", foreign_keys=[user_id], back_populates="fee_assignments")
+    assigned_by_user = relationship("User", foreign_keys=[assigned_by_user_id], back_populates="assigned_fees")
 
 
 class UserNotification(Base):
@@ -173,4 +213,4 @@ class UserNotification(Base):
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
 
-    user = relationship("User")
+    user = relationship("User", back_populates="user_notifications")

@@ -1,44 +1,40 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from datetime import date, time # Import date and time for attendance date and session times
-
+from datetime import date, time, datetime # Import datetime
 
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
     phone: str
-    role: str # Consider a default or validation for roles
+    role: str
     branch: Optional[str] = None
-
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-
-class UserResponse(BaseModel): # Updated to include branch and ID
-    id: int # <--- ADD THIS LINE
+class UserResponse(BaseModel):
+    id: int
     name: str
     email: EmailStr
     phone: str
     role: str
-    branch: Optional[str] = None # Added branch
+    branch: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
 
 
 class Token(BaseModel):
     access_token: str
     token_type: str
-    user_data: UserResponse # Contains name, email, role, branch, and ID
-
+    user_data: UserResponse
 
 class TokenData(BaseModel):
     email: Optional[str] = None
     role: Optional[str] = None
-    branch: Optional[str] = None # Added branch
+    branch: Optional[str] = None
 
 
 class TrainerCreate(BaseModel):
@@ -62,32 +58,30 @@ class TrainerResponse(BaseModel):
     phone: str
     email: EmailStr
     availability: Optional[str]
-    branch_name: Optional[str] # Added branch_name
+    branch_name: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
 
 
 # --- New Schemas for User Attendance ---
 
 class UserAttendanceCreate(BaseModel):
     user_id: int
-    date: date # Use date type for actual date objects
-    status: str # e.g., "present", "absent", "late"
-    # branch will be determined by the trainer's branch on the backend
-
+    date: date
+    status: str
 
 class UserAttendanceResponse(BaseModel):
     id: int
     user_id: int
     date: date
     status: str
-    branch: Optional[str] # Include branch in response
+    branch: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
 
-# --- New Schemas for Session Schedule ---
+# --- Schemas for Session Schedule ---
 class SessionScheduleCreate(BaseModel):
     session_name: str
     session_date: date
@@ -108,13 +102,13 @@ class SessionScheduleResponse(BaseModel):
     description: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
 
-# --- New Schemas for Session Attendance ---
+# --- Schemas for Session Attendance ---
 class SessionAttendanceCreate(BaseModel):
     session_id: int
     user_id: int
-    status: str # e.g., "present", "absent", "late"
+    status: str
     attendance_date: date
 
 class SessionAttendanceResponse(BaseModel):
@@ -123,11 +117,10 @@ class SessionAttendanceResponse(BaseModel):
     user_id: int
     status: str
     attendance_date: date
-    # Include user details for easier display in frontend
-    user: UserResponse # Nested UserResponse schema
+    user: UserResponse
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
 
 
 class MemberCreate(BaseModel):
@@ -138,7 +131,6 @@ class MemberCreate(BaseModel):
     first_name: str
     fathers_name: str
 
-    # Residential Address
     res_flat_no: str
     res_wing: str
     res_floor: str
@@ -148,7 +140,6 @@ class MemberCreate(BaseModel):
     res_area: str
     res_pin_code: str
 
-    # Office Address
     off_office_no: str
     off_wing: str
     off_floor: str
@@ -188,9 +179,6 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
 
-
-from datetime import datetime
-
 class FeeAssignmentCreate(BaseModel):
     user_id: int
     fee_type: str
@@ -208,9 +196,10 @@ class FeeAssignmentResponse(BaseModel):
     is_paid: bool
     created_at: datetime
     updated_at: datetime
+    user: UserResponse # Add nested UserResponse schema
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
 
 class FeeAssignmentUpdate(BaseModel):
     fee_type: Optional[str] = None
@@ -232,7 +221,7 @@ class UserNotificationResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
 
 class UserNotificationUpdate(BaseModel):
     is_read: bool
@@ -247,4 +236,48 @@ class UserFeesResponse(BaseModel):
     branch_name: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True # Changed from orm_mode = True
+
+# --- New Schemas for Diet Plan ---
+class DietPlanCreate(BaseModel):
+    user_id: int
+    title: str
+    description: str
+    expiry_date: Optional[date] = None
+
+class DietPlanResponse(BaseModel):
+    id: int
+    user_id: int
+    assigned_by_trainer_id: int
+    title: str
+    description: str
+    assigned_date: date
+    expiry_date: Optional[date] = None
+    branch_name: Optional[str] = None
+    user: UserResponse # Nested UserResponse
+    assigned_by_trainer: TrainerResponse # Nested TrainerResponse
+
+    class Config:
+        from_attributes = True # Changed from orm_mode = True
+
+# --- New Schemas for Exercise Plan ---
+class ExercisePlanCreate(BaseModel):
+    user_id: int
+    title: str
+    description: str
+    expiry_date: Optional[date] = None
+
+class ExercisePlanResponse(BaseModel):
+    id: int
+    user_id: int
+    assigned_by_trainer_id: int
+    title: str
+    description: str
+    assigned_date: date
+    expiry_date: Optional[date] = None
+    branch_name: Optional[str] = None
+    user: UserResponse # Nested UserResponse
+    assigned_by_trainer: TrainerResponse # Nested TrainerResponse
+
+    class Config:
+        from_attributes = True # Changed from orm_mode = True

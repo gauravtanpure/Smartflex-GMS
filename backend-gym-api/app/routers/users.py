@@ -234,7 +234,7 @@ def get_my_attendance(
     db: Session = Depends(database.get_db),
     current_user: schemas.UserResponse = Depends(get_current_active_user),
     start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
+    end_date: Optional[Optional[date]] = None,
 ):
     """
     Allows any authenticated user to fetch their own attendance records.
@@ -256,6 +256,75 @@ def get_my_attendance(
     # Order by date descending for most recent first
     attendance_records = query.order_by(models.UserAttendance.date.desc()).all()
     return attendance_records
+
+# --- New Endpoints for User's Diet and Exercise Plans ---
+@router.get("/my-diet-plans", response_model=List[schemas.DietPlanResponse])
+def get_my_diet_plans(
+    db: Session = Depends(database.get_db),
+    current_user: schemas.UserResponse = Depends(get_current_active_user)
+):
+    """
+    Allows a user to view their assigned diet plans.
+    """
+    diet_plans = db.query(models.DietPlan).filter(models.DietPlan.user_id == current_user.id).all()
+    
+    # Manually populate relationships for the response
+    result = []
+    for dp in diet_plans:
+        dp_dict = dp.__dict__.copy() # Create a copy to modify
+
+        user_data = db.query(models.User).filter(models.User.id == dp.user_id).first()
+        if user_data:
+            dp_dict['user'] = schemas.UserResponse.from_orm(user_data)
+        else:
+            # Fallback for user if not found (shouldn't happen with FK)
+            dp_dict['user'] = schemas.UserResponse(id=dp.user_id, name="Unknown User", email="", phone="", role="member", branch=None)
+
+        trainer_data = db.query(models.Trainer).filter(models.Trainer.id == dp.assigned_by_trainer_id).first()
+        if trainer_data:
+            # Convert string to list only if it's a string
+            trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+            dp_dict['assigned_by_trainer'] = schemas.TrainerResponse.from_orm(trainer_data)
+        else:
+            # Fallback for trainer if not found
+            dp_dict['assigned_by_trainer'] = schemas.TrainerResponse(id=dp.assigned_by_trainer_id, name="Unknown Trainer", specialization=[], rating=0.0, experience=0, phone="", email="", availability=None, branch_name=None)
+            
+        result.append(schemas.DietPlanResponse(**dp_dict))
+    return result
+
+@router.get("/my-exercise-plans", response_model=List[schemas.ExercisePlanResponse])
+def get_my_exercise_plans(
+    db: Session = Depends(database.get_db),
+    current_user: schemas.UserResponse = Depends(get_current_active_user)
+):
+    """
+    Allows a user to view their assigned exercise plans.
+    """
+    exercise_plans = db.query(models.ExercisePlan).filter(models.ExercisePlan.user_id == current_user.id).all()
+
+    # Manually populate relationships for the response
+    result = []
+    for ep in exercise_plans:
+        ep_dict = ep.__dict__.copy() # Create a copy to modify
+
+        user_data = db.query(models.User).filter(models.User.id == ep.user_id).first()
+        if user_data:
+            ep_dict['user'] = schemas.UserResponse.from_orm(user_data)
+        else:
+            # Fallback for user if not found
+            ep_dict['user'] = schemas.UserResponse(id=ep.user_id, name="Unknown User", email="", phone="", role="member", branch=None)
+
+        trainer_data = db.query(models.Trainer).filter(models.Trainer.id == ep.assigned_by_trainer_id).first()
+        if trainer_data:
+            # Convert string to list only if it's a string
+            trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
+            ep_dict['assigned_by_trainer'] = schemas.TrainerResponse.from_orm(trainer_data)
+        else:
+            # Fallback for trainer if not found
+            ep_dict['assigned_by_trainer'] = schemas.TrainerResponse(id=ep.assigned_by_trainer_id, name="Unknown Trainer", specialization=[], rating=0.0, experience=0, phone="", email="", availability=None, branch_name=None)
+
+        result.append(schemas.ExercisePlanResponse(**ep_dict))
+    return result
 
 
 # --- General User Endpoints (more general, should come last) ---
@@ -287,8 +356,6 @@ def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(da
         db_user.email = user.email
     if user.phone is not None:
         db_user.phone = user.phone
-
-    # ❌ DO NOT update password, role, or branch here unless explicitly needed
 
     db.commit()
     db.refresh(db_user)

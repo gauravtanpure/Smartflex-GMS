@@ -12,21 +12,17 @@ import {
   ChevronLeft,
   User,
   GitBranch,
-  UserCheck, // New icon for Manage Attendance
-  UserCog, // Icon for Profile Completion (not directly used for link, but good to keep if needed elsewhere)
-  Clock, // New icon for Session Management
+  UserCheck,
+  Clock,
+  ClipboardList, // New icon for Diet/Exercise Assignment
+  HeartPulse, // New icon for My Exercise
+  Salad, // New icon for My Diet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  // These routes will be conditionally displayed or restricted based on role
-  // For members: My Attendance, My Fees, My Exercise, My Diet Sheet
-  // For trainers: Trainer specific (See Users, Manage Attendance)
-  // For admins: Manage Trainers
-  // For superadmins: Manage Branches
-  { title: "Trainers", icon: Users, href: "/trainers" }, // Generally visible for all to see trainers
 ];
 
 interface SidebarProps {
@@ -37,17 +33,17 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [username, setUsername] = useState("");
-  const [userRole, setUserRole] = useState<string | null>(null); // Use a single state for role
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [branch, setBranch] = useState("");
-  const [profileCompletion, setProfileCompletion] = useState<string | null>(null); // New state for profile completion
+  const [profileCompletion, setProfileCompletion] = useState<string | null>(null);
   const location = useLocation();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     const role = localStorage.getItem("role");
     const storedBranch = localStorage.getItem("branch");
-    const storedProfileCompletion = localStorage.getItem("profile_completion_percentage"); // Retrieve completion percentage
+    const storedProfileCompletion = localStorage.getItem("profile_completion_percentage");
 
     if (storedUsername) setUsername(storedUsername);
     if (role) setUserRole(role);
@@ -55,7 +51,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     if (storedProfileCompletion) setProfileCompletion(storedProfileCompletion);
   }, []);
 
-  // Effect to listen for changes in localStorage for profile completion
   useEffect(() => {
     const handleStorageChange = () => {
       const storedProfileCompletion = localStorage.getItem("profile_completion_percentage");
@@ -75,9 +70,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const isMember = userRole === "member";
 
   const handleProfileClick = () => {
-    if (isMember) { // Only allow members to navigate to profile completion
+    if (isMember) {
       navigate("/profile-completion");
-      if (onMobileClose) { // Close sidebar on mobile after navigation
+      if (onMobileClose) {
         onMobileClose();
       }
     }
@@ -199,15 +194,15 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 )}
               </NavLink>
               <NavLink
-                to="/exercise"
+                to="/my-exercise"
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                  location.pathname === "/exercise"
+                  location.pathname === "/my-exercise"
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-muted text-foreground hover:text-foreground"
                 )}
               >
-                <Dumbbell className="w-5 h-5 flex-shrink-0" />
+                <HeartPulse className="w-5 h-5 flex-shrink-0" />
                 {!collapsed && (
                   <span className="text-sm font-medium truncate">
                     My Exercise
@@ -215,29 +210,24 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 )}
               </NavLink>
               <NavLink
-                to="/diet"
+                to="/my-diet"
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                  location.pathname === "/diet"
+                  location.pathname === "/my-diet"
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-muted text-foreground hover:text-foreground"
                 )}
               >
-                <FileText className="w-5 h-5 flex-shrink-0" />
+                <Salad className="w-5 h-5 flex-shrink-0" />
                 {!collapsed && (
                   <span className="text-sm font-medium truncate">
-                    My Diet Sheet
+                    My Diet Plan
                   </span>
                 )}
               </NavLink>
             </>
           )}
 
-          {/* Trainers page is generally visible for members to see trainers,
-              and also for admins/superadmins to manage them.
-              Trainers themselves might not need to see this, or could see a filtered list.
-              For now, let's keep it generally accessible, but define specific trainer views below.
-          */}
           <NavLink
             to="/trainers"
             className={cn(
@@ -290,7 +280,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   </span>
                 )}
               </NavLink>
-              {/* New NavLink for Session Management */}
               <NavLink
                 to="/trainer/sessions"
                 className={cn(
@@ -304,6 +293,38 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 {!collapsed && (
                   <span className="text-sm font-medium truncate">
                     Manage Sessions
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="/trainer/assign-diet"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/trainer/assign-diet"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-muted text-foreground hover:text-foreground"
+                )}
+              >
+                <Salad className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">
+                    Assign Diet Plan
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="/trainer/assign-exercise"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/trainer/assign-exercise"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-muted text-foreground hover:text-foreground"
+                )}
+              >
+                <Dumbbell className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">
+                    Assign Exercise Plan
                   </span>
                 )}
               </NavLink>
@@ -354,9 +375,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <div
           className={cn(
             "absolute bottom-4 left-4 right-4",
-            isMember && "cursor-pointer" // Add cursor-pointer for members
+            isMember && "cursor-pointer"
           )}
-          onClick={handleProfileClick} // Add onClick handler here
+          onClick={handleProfileClick}
         >
           <div className={cn("flex items-center space-x-3 p-3 rounded-lg bg-muted/50", collapsed && "justify-center")}>
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
