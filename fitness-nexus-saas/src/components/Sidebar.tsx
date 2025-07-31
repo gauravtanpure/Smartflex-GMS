@@ -145,7 +145,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           </NavLink>
 
           {/* Conditional rendering for Manage Fees for 'admin' role */}
-          {(isAdmin || isSuperAdmin) && ( // Admin or Superadmin
+          {(isAdmin) && ( // Admin or Superadmin
             <NavLink
               to="/manage-fees"
               onClick={onMobileClose} // Close sidebar on mobile after click

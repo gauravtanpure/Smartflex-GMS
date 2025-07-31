@@ -147,154 +147,139 @@ export default function Attendance() {
   const totalDays = generalAttendance.length;
   const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
-  const getRecordDate = (record: CombinedAttendanceRecord): string => {
-    return record.type === 'general' ? record.date : record.attendance_date;
-  };
-
-  const getRecordTitle = (record: CombinedAttendanceRecord): string => {
-    if (record.type === 'general') {
-      return "General Attendance";
-    } else {
-      return record.session?.session_name || "Session Attendance";
-    }
-  };
-
-  const getRecordSubtitle = (record: CombinedAttendanceRecord): string => {
-    if (record.type === 'general') {
-      return `Branch: ${record.branch}`;
-    } else {
-      return `Session • ${record.session?.branch_name || 'Unknown Branch'}`;
-    }
-  };
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">My Attendance</h1>
-          <p className="text-muted-foreground mt-1">Track your gym attendance and workout consistency</p>
+          {/* ONLY this heading will be faint orange */}
+          <h1 className="text-4xl font-extrabold text-logoOrange mb-2">My Attendance</h1>
+          <p className="text-lg text-muted-foreground">Track your gym check-ins and session consistency.</p>
         </div>
-        <Badge variant="outline" className="flex items-center space-x-1">
-          <TrendingUp className="w-3 h-3" />
-          <span>{attendancePercentage}% Overall</span>
+        <Badge variant="outline" className="mt-4 sm:mt-0 px-4 py-2 text-md font-semibold flex items-center space-x-2 bg-white shadow-sm border-gray-200">
+          <TrendingUp className="w-4 h-4 text-logoOrange" />
+          <span>Overall Consistency: <span className="text-logoOrange">{attendancePercentage}%</span></span>
         </Badge>
       </div>
 
-      {/* Attendance Overview */}
+      {/* Attendance Overview Cards */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
+            <Card key={i} className="rounded-xl shadow-sm border-gray-100 animate-pulse">
               <CardContent className="p-6">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded w-1/3 mb-1"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
+                <div className="h-5 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="h-10 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : error ? (
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-red-500">{error}</p>
+        <Card className="rounded-xl shadow-sm border-red-200 bg-red-50">
+          <CardContent className="p-6 text-center text-red-700">
+            <p className="font-semibold text-lg">Error loading attendance data:</p>
+            <p className="mt-2">{error}</p>
+            <button
+              onClick={fetchMyAttendance}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="rounded-xl shadow-md border-gray-100 transition-transform duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center space-x-2">
+              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold"> {/* Changed back to gray-800 */}
                 <CheckCircle className="w-5 h-5 text-success" />
                 <span>Days Present (General)</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-success">{presentDays}</div>
+              <div className="text-4xl font-bold text-success">{presentDays}</div>
               <p className="text-sm text-muted-foreground">out of {totalDays} general records</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-xl shadow-md border-gray-100 transition-transform duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center space-x-2">
+              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold"> {/* Changed back to gray-800 */}
                 <XCircle className="w-5 h-5 text-destructive" />
                 <span>Days Absent (General)</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-destructive">{totalDays - presentDays}</div>
+              <div className="text-4xl font-bold text-destructive">{totalDays - presentDays}</div>
               <p className="text-sm text-muted-foreground">missed general check-ins</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-xl shadow-md border-gray-100 transition-transform duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center space-x-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
+              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold"> {/* Changed back to gray-800 */}
+                <TrendingUp className="w-5 h-5 text-logoOrange" />
                 <span>General Attendance Rate</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">{attendancePercentage}%</div>
-              <Progress value={attendancePercentage} className="mt-2" />
+              <div className="text-4xl font-bold text-logoOrange">{attendancePercentage}%</div>
+              <Progress value={attendancePercentage} className="mt-2 h-2 [&>*]:bg-logoOrange" /> {/* Progress bar keeps orange fill */}
+              <p className="text-xs text-muted-foreground mt-1">Based on general gym visits.</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* --- */}
-
       {/* General Attendance List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-indigo-500" />
+      <Card className="rounded-xl shadow-md mb-8">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800"> {/* Changed back to gray-800 */}
+            <Clock className="w-6 h-6 text-gray-600" /> {/* Icon color adjusted */}
             <span>General Gym Attendance History</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <div key={`gen-load-${i}`} className="animate-pulse flex items-center space-x-4 p-4 rounded-lg border">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              {[1, 2, 3].map((i) => (
+                <div key={`gen-load-${i}`} className="animate-pulse flex items-center space-x-4 p-4 rounded-lg border bg-gray-100">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-5 bg-gray-200 rounded w-2/3 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                   </div>
-                  <div className="h-6 bg-gray-200 rounded w-16"></div>
+                  <div className="h-8 bg-gray-200 rounded w-20"></div>
                 </div>
               ))}
             </div>
           ) : generalAttendance.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No general gym attendance records found.</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Check in at the gym to see your general attendance here.
+            <div className="text-center py-10 border border-dashed rounded-lg text-gray-500 bg-gray-50">
+              <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-lg font-medium">No general gym attendance records found.</p>
+              <p className="text-sm mt-2">
+                Check in at the gym to see your attendance history here.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {generalAttendance.map((record) => (
-                <div key={`general-${record.id}`} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                <div key={`general-${record.id}`} className="flex items-center justify-between p-4 rounded-lg border bg-white shadow-sm hover:bg-gray-50 transition-colors duration-200 ease-in-out">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold ${
                       record.status === "present"
-                        ? "bg-success/10 text-success"
-                        : "bg-destructive/10 text-destructive"
+                        ? "bg-success/80"
+                        : "bg-destructive/80"
                     }`}>
                       {record.status === "present" ? (
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-6 h-6" />
                       ) : (
-                        <XCircle className="w-5 h-5" />
+                        <XCircle className="w-6 h-6" />
                       )}
                     </div>
                     <div>
-                      <p className="font-medium">
+                      <p className="font-semibold text-lg text-gray-800">
                         {new Date(record.date).toLocaleDateString('en-US', {
                           weekday: 'long',
                           year: 'numeric',
@@ -302,15 +287,16 @@ export default function Attendance() {
                           day: 'numeric'
                         })}
                       </p>
-                      <div className="flex items-center space-x-2">
-                        <p className="text-sm text-muted-foreground">General Attendance</p>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <p className="text-xs text-muted-foreground">Branch: {record.branch}</p>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600 mt-1">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span>General Check-in</span>
+                        <span className="text-gray-400">•</span>
+                        <span>Branch: {record.branch}</span>
                       </div>
                     </div>
                   </div>
-                  <Badge variant={record.status === "present" ? "default" : "destructive"}>
-                    {record.status}
+                  <Badge variant={record.status === "present" ? "default" : "destructive"} className="px-3 py-1 text-base font-semibold">
+                    {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                   </Badge>
                 </div>
               ))}
@@ -319,68 +305,69 @@ export default function Attendance() {
         </CardContent>
       </Card>
 
-      {/* --- */}
-
       {/* Session Attendance List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-purple-500" />
+      <Card className="rounded-xl shadow-md mb-8">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800"> {/* Changed back to gray-800 */}
+            <Users className="w-6 h-6 text-gray-600" /> {/* Icon color adjusted */}
             <span>Session Attendance History</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <div key={`sess-load-${i}`} className="animate-pulse flex items-center space-x-4 p-4 rounded-lg border">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              {[1, 2, 3].map((i) => (
+                <div key={`sess-load-${i}`} className="animate-pulse flex items-center space-x-4 p-4 rounded-lg border bg-gray-100">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-5 bg-gray-200 rounded w-2/3 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                   </div>
-                  <div className="h-6 bg-gray-200 rounded w-16"></div>
+                  <div className="h-8 bg-gray-200 rounded w-20"></div>
                 </div>
               ))}
             </div>
           ) : sessionAttendance.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No session attendance records found.</p>
-              <p className="text-sm text-muted-foreground mt-2">
+            <div className="text-center py-10 border border-dashed rounded-lg text-gray-500 bg-gray-50">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-lg font-medium">No session attendance records found.</p>
+              <p className="text-sm mt-2">
                 Book and attend some sessions to see your attendance here.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {sessionAttendance.map((record) => (
-                <div key={`session-${record.id}`} className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                <div key={`session-${record.id}`} className="flex items-center justify-between p-4 rounded-lg border bg-white shadow-sm hover:bg-gray-50 transition-colors duration-200 ease-in-out">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold ${
                       record.status === "present"
-                        ? "bg-purple-100 text-purple-600"
-                        : "bg-rose-100 text-rose-600"
+                        ? "bg-purple-600/80"
+                        : "bg-rose-600/80"
                     }`}>
-                      <Users className="w-5 h-5" />
+                      <Users className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="font-medium">
-                        {new Date(record.attendance_date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                      <p className="font-semibold text-lg text-gray-800">
+                        {record.session?.session_name || 'Unknown Session'}
                       </p>
-                      <div className="flex items-center space-x-2">
-                        <p className="text-sm text-muted-foreground">Session: {record.session?.session_name || 'N/A'}</p>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <p className="text-xs text-muted-foreground">Branch: {record.session?.branch_name || 'N/A'}</p>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600 mt-1">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span>
+                          {new Date(record.attendance_date).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                        <span className="text-gray-400">•</span>
+                        <span>Branch: {record.session?.branch_name || 'N/A'}</span>
                       </div>
                     </div>
                   </div>
-                  <Badge variant={record.status === "present" ? "default" : "destructive"}>
-                    {record.status}
+                  <Badge variant={record.status === "present" ? "default" : "destructive"} className="px-3 py-1 text-base font-semibold">
+                    {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                   </Badge>
                 </div>
               ))}
@@ -390,25 +377,28 @@ export default function Attendance() {
       </Card>
 
       {/* Weekly Goals */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Weekly Goals</CardTitle>
+      <Card className="rounded-xl shadow-md">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800"> {/* Changed back to gray-800 */}
+            <TrendingUp className="w-6 h-6 text-gray-600" /> {/* Icon color adjusted */}
+            <span>Weekly Goals</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Workout Days (Goal: 5 days)</span>
-                <span>{Math.min(presentDays, 5)}/5 days</span>
+              <div className="flex justify-between items-center text-base mb-2 font-medium text-gray-700">
+                <span>Workout Days (Goal: 5 days/week)</span>
+                <span><span className="text-logoOrange font-bold">{Math.min(presentDays, 5)}</span>/5 days</span>
               </div>
-              <Progress value={Math.min((presentDays / 5) * 100, 100)} />
+              <Progress value={Math.min((presentDays / 5) * 100, 100)} className="h-3 bg-gray-200 [&>*]:bg-logoOrange" />
             </div>
             <div>
-              <div className="flex justify-between text-sm mb-2">
+              <div className="flex justify-between items-center text-base mb-2 font-medium text-gray-700">
                 <span>General Consistency Rate (Goal: 80%)</span>
-                <span>{attendancePercentage}%</span>
+                <span><span className="text-logoOrange font-bold">{attendancePercentage}</span>%</span>
               </div>
-              <Progress value={Math.min(attendancePercentage, 100)} />
+              <Progress value={Math.min(attendancePercentage, 100)} className="h-3 bg-gray-200 [&>*]:bg-logoOrange" />
             </div>
           </div>
         </CardContent>
