@@ -281,3 +281,32 @@ class ExercisePlanResponse(BaseModel):
 
     class Config:
         from_attributes = True # Changed from orm_mode = True
+
+# --- Schemas for Membership Plans ---
+class MembershipPlanCreate(BaseModel):
+    plan_name: str
+    description: Optional[str] = None
+    price: float
+    duration_months: int
+    branch_name: Optional[str] = None # Allow setting branch for superadmin
+
+class MembershipPlanResponse(BaseModel):
+    id: int
+    plan_name: str
+    description: Optional[str] = None
+    price: float
+    duration_months: int
+    branch_name: Optional[str] = None
+    is_approved: bool # ⬅️ NEW FIELD
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class MembershipPlanUpdate(BaseModel):
+    plan_name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    duration_months: Optional[int] = None
+    is_approved: Optional[bool] = None # ⬅️ NEW FIELD for update

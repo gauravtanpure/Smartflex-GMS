@@ -214,3 +214,16 @@ class UserNotification(Base):
     created_at = Column(DateTime, default=func.now())
 
     user = relationship("User", back_populates="user_notifications")
+
+class MembershipPlan(Base):
+    __tablename__ = "membership_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plan_name = Column(String, nullable=False, unique=True)
+    description = Column(String, nullable=True)
+    price = Column(Float, nullable=False)
+    duration_months = Column(Integer, nullable=False)
+    branch_name = Column(String, nullable=True) # To link with a branch
+    is_approved = Column(Boolean, default=False) # ⬅️ NEW FIELD
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

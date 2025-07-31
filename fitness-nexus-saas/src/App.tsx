@@ -1,3 +1,4 @@
+// App.tsx
 import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -25,7 +26,7 @@ import AssignExercise from "./pages/AssignExercise";
 // New imports for member viewing pages
 import MyDiet from "./pages/MyDiet";
 import MyExercise from "./pages/MyExercise";
-
+import ManageMembershipPlans from "./pages/ManageMembershipPlans"; // ⬅️ NEW IMPORT
 
 const queryClient = new QueryClient();
 
@@ -124,6 +125,12 @@ const App = () => {
             path="/trainer/assign-exercise"
             element={renderProtectedRoute(AssignExercise, ["trainer", "admin", "superadmin"])}
           /> {/* */}
+
+          {/* NEW Protected Route for Manage Membership Plans (Admin and Superadmin) */}
+          <Route
+            path="/manage-membership-plans"
+            element={renderProtectedRoute(ManageMembershipPlans, ["admin", "superadmin"])}
+          />
 
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />

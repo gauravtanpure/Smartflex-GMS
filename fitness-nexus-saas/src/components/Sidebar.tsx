@@ -17,6 +17,7 @@ import {
   ClipboardList, // New icon for Diet/Exercise Assignment - Keep if existing feature
   HeartPulse, // New icon for My Exercise - Keep if existing feature
   Salad, // New icon for My Diet - Keep if existing feature
+  Award, // ⬅️ NEW ICON for Membership Plans
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -138,7 +139,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           >
             <LayoutDashboard className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/dashboard" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} /> {/* Icon color adjustment */}
             {!collapsed && (
-              <span className="text-sm font-medium truncate">
+              <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Dashboard
               </span>
             )}
@@ -158,8 +159,29 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             >
               <CreditCard className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-fees" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
               {!collapsed && (
-                <span className="text-sm font-medium truncate">
+                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Manage Fees
+                </span>
+              )}
+            </NavLink>
+          )}
+
+          {/* Conditional rendering for Manage Membership Plans for 'admin' and 'superadmin' roles */}
+          {(isAdmin || isSuperAdmin) && (
+            <NavLink
+              to="/manage-membership-plans"
+              onClick={onMobileClose}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                location.pathname === "/manage-membership-plans"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              )}
+            >
+              <Award className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-membership-plans" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+              {!collapsed && (
+                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                  Manage Membership Plans
                 </span>
               )}
             </NavLink>
@@ -180,7 +202,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <Calendar className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/attendance" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     My Attendance
                   </span>
                 )}
@@ -197,7 +219,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <CreditCard className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/fees" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     My Fees
                   </span>
                 )}
@@ -214,7 +236,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <HeartPulse className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/my-exercise" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     My Exercise
                   </span>
                 )}
@@ -231,7 +253,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <Salad className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/my-diet" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     My Diet Plan
                   </span>
                 )}
@@ -253,7 +275,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             >
               <Users className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/trainers" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
               {!collapsed && (
-                <span className="text-sm font-medium truncate">
+                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Trainers
                 </span>
               )}
@@ -275,7 +297,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <Users className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/trainer/users" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     See My Branch Users
                   </span>
                 )}
@@ -292,7 +314,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <UserCheck className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/trainer/attendance" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     Manage My Branch Attendance
                   </span>
                 )}
@@ -309,7 +331,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <Clock className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/trainer/sessions" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     Manage Sessions
                   </span>
                 )}
@@ -326,10 +348,10 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <Salad className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/trainer/assign-diet" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     Assign Diet Plan
                   </span>
-                  )}
+                )}
               </NavLink>
               <NavLink
                 to="/trainer/assign-exercise"
@@ -343,7 +365,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               >
                 <Dumbbell className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/trainer/assign-exercise" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     Assign Exercise Plan
                   </span>
                 )}
@@ -365,7 +387,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             >
               <Users className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-trainers" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
               {!collapsed && (
-                <span className="text-sm font-medium truncate">
+                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Manage Trainers
                 </span>
               )}
@@ -386,7 +408,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             >
               <GitBranch className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-branches" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
               {!collapsed && (
-                <span className="text-sm font-medium truncate">
+                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Manage Branches
                 </span>
               )}
@@ -408,8 +430,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate text-gray-800">{username || "User"}</p>
-                <p className="text-xs text-gray-500"> {/* Ensured text color */}
+                <p className="text-sm font-bold truncate text-gray-800" style={{ fontFamily: "Montserrat, sans-serif" }}>{username || "User"}</p>
+                <p className="text-xs text-gray-500" style={{ fontFamily: "Montserrat, sans-serif" }}> {/* Ensured text color */}
                     {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : isTrainer ? `Trainer (${branch || 'No Branch'})` : `Member (${profileCompletion || '0'}%)`}
                 </p>
               </div>
