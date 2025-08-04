@@ -7,7 +7,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import {
   Calendar,
-  Clock,
   Flame,
   Target,
   HeartPulse,
@@ -26,7 +25,7 @@ const quotes = [
   "It never gets easier, you just get stronger.",
 ];
 
-const cardBaseStyle = "bg-white/70 backdrop-blur-md rounded-xl shadow-lg";
+const cardBaseStyle = "bg-card text-foreground rounded-xl shadow-md";
 
 export default function Dashboard() {
   const [username, setUsername] = useState("");
@@ -47,9 +46,7 @@ export default function Dashboard() {
 
       try {
         const res = await fetch("http://127.0.0.1:8000/users/my-attendance", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (res.ok) {
@@ -96,37 +93,31 @@ export default function Dashboard() {
   const attendanceMonthPct = (attendedDaysThisMonth / totalDaysInMonth) * 100;
 
   return (
-    <div
-      className="min-h-screen p-6 sm:p-8 lg:p-12"
-      style={{
-        background: "linear-gradient(135deg, #E0F2F7, #E8DFF2, #F7E0F7, #F0F7E0)",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Welcome back,</h1>
-          <h2 className="text-3xl md:text-4xl font-bold text-blue-600">{username}</h2>
+    <div className="min-h-screen pt-4 px-6 sm:px-8 lg:px-12 bg-background font-poppins">
+      <div className="max-w-7xl mx-auto space-y-6 text-[#6b7e86]">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-black">Welcome back,</h1>
+          <h2 className="text-3xl md:text-4xl font-bold text-[#6b7e86]">{username}</h2>
         </div>
 
-        {/* 🧠 Daily Motivation */}
+        {/* Daily Motivation */}
         <Card className={cardBaseStyle}>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-purple-700 flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <HeartPulse className="w-5 h-5" />
               Daily Motivation
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg italic text-gray-700">"{quoteOfTheDay}"</p>
+            <p className="text-base italic">"{quoteOfTheDay}"</p>
           </CardContent>
         </Card>
 
         {/* Attendance Progress */}
         <Card className={cardBaseStyle}>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-purple-600" />
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
               Attendance Progress
             </CardTitle>
           </CardHeader>
@@ -134,30 +125,20 @@ export default function Dashboard() {
             <div className="space-y-4">
               {/* Week */}
               <div>
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm">
                   <span>This Week</span>
                   <span>{attendedDaysThisWeek}/7 Days</span>
                 </div>
-                <Progress
-                  value={attendanceWeekPct}
-                  className="h-2"
-                  indicatorClassName="bg-gradient-to-r from-green-400 to-blue-500"
-                />
+                <Progress value={attendanceWeekPct} className="h-2" />
               </div>
 
               {/* Month */}
               <div>
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm">
                   <span>This Month</span>
-                  <span>
-                    {attendedDaysThisMonth}/{totalDaysInMonth} Days
-                  </span>
+                  <span>{attendedDaysThisMonth}/{totalDaysInMonth} Days</span>
                 </div>
-                <Progress
-                  value={attendanceMonthPct}
-                  className="h-2"
-                  indicatorClassName="bg-gradient-to-r from-yellow-400 to-pink-500"
-                />
+                <Progress value={attendanceMonthPct} className="h-2" />
               </div>
             </div>
           </CardContent>
@@ -165,44 +146,33 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Sessions */}
           <Card className={cardBaseStyle}>
             <CardContent className="p-4 flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-green-300 to-blue-500">
-                <Calendar className="w-6 h-6 text-white" />
-              </div>
+              <Calendar className="w-6 h-6" />
               <div>
-                <p className="text-sm text-muted-foreground">Workouts This Week</p>
-                <p className="text-lg font-semibold text-gray-800">
-                  {attendedDaysThisWeek} Sessions
-                </p>
+                <p className="text-sm">Workouts This Week</p>
+                <p className="text-lg font-semibold text-black">{attendedDaysThisWeek} Sessions</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Calories (mocked) */}
           <Card className={cardBaseStyle}>
             <CardContent className="p-4 flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-yellow-300 to-pink-500">
-                <Flame className="w-6 h-6 text-white" />
-              </div>
+              <Flame className="w-6 h-6" />
               <div>
-                <p className="text-sm text-muted-foreground">Calories Burned</p>
-                <p className="text-lg font-semibold text-orange-600">3,200 kcal</p>
+                <p className="text-sm">Calories Burned</p>
+                <p className="text-lg font-semibold text-black">3,200 kcal</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Goal Progress */}
           <Card className={cardBaseStyle}>
             <CardContent className="p-4 space-y-2">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-indigo-400 to-purple-600">
-                  <Target className="w-6 h-6 text-white" />
-                </div>
+                <Target className="w-6 h-6" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Goal Progress</p>
-                  <p className="text-lg font-semibold text-gray-800">70% Complete</p>
+                  <p className="text-sm">Goal Progress</p>
+                  <p className="text-lg font-semibold text-black">70% Complete</p>
                 </div>
               </div>
               <Progress value={70} className="h-2" />
@@ -210,32 +180,31 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* ✅ Achievement Section */}
+        {/* Achievement Section */}
         <Card className={cardBaseStyle}>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-yellow-700 flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Trophy className="w-5 h-5" />
               Achievement Unlocked!
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-800 text-lg">
-              🥇 You've completed {attendedDaysThisWeek >= 7 ? "a 7-day" : `${attendedDaysThisWeek}-day`} streak!
-              Keep it going!
+            <p className="text-base">
+              🥇 You've completed {attendedDaysThisWeek >= 7 ? "a 7-day" : `${attendedDaysThisWeek}-day`} streak! Keep it going!
             </p>
           </CardContent>
         </Card>
 
-        {/* ✅ Pro Tip Section */}
+        {/* Pro Tip Section */}
         <Card className={cardBaseStyle}>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-green-700 flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
               Pro Tip
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 text-md">
+            <p className="text-base">
               Recovery is just as important as your workouts. Make sure to sleep 7–8 hours and hydrate properly.
             </p>
           </CardContent>
