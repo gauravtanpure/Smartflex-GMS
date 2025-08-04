@@ -8,6 +8,7 @@ interface User {
   email: string;
 }
 
+// Interface for a single Fee assignment
 interface Fee {
   id: number;
   user_id: number;
@@ -17,7 +18,7 @@ interface Fee {
   is_paid: boolean;
   branch_name: string;
   assigned_by_user_id: number;
-  user: { // Add nested user object for displaying user details from the fee endpoint
+  user: {
     id: number;
     name: string;
     email: string;
@@ -27,42 +28,79 @@ interface Fee {
   };
 }
 
+// Interface for a single Membership Plan
+interface Plan {
+  id: number;
+  plan_name: string;
+  price: number;
+}
+
 export default function ManageFees() {
   const [users, setUsers] = useState<User[]>([]);
   const [fees, setFees] = useState<Fee[]>([]);
-  const [form, setForm] = useState({ user_id: "", fee_type: "", amount: "", due_date: "" });
-  const [searchQuery, setSearchQuery] = useState(""); // New state for search query
+  const [plans, setPlans] = useState<Plan[]>([]); // State for membership plans
+  const [form, setForm] = useState({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" });
+  const [searchQuery, setSearchQuery] = useState("");
 
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    // Fetch users for the dropdown
-    axios
-      .get("http://localhost:8000/users/branch-users", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(res => setUsers(res.data))
-      .catch(() => alert("Failed to load users"));
+    const fetchInitialData = async () => {
+      try {
+        // Fetch users for the dropdown
+        const usersRes = await axios.get("http://localhost:8000/users/branch-users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUsers(usersRes.data);
 
-    // Fetch fee assignments for the branch
-    fetchBranchFees();
+        // Fetch approved membership plans for the branch
+        const plansRes = await axios.get("http://localhost:8000/membership-plans/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setPlans(plansRes.data);
+
+      } catch (error) {
+        alert("Failed to load initial data (users or plans).");
+      }
+    };
+
+    fetchInitialData();
+    fetchBranchFees(); // Initial fetch for fees
   }, [token]);
 
   useEffect(() => {
     // Refetch fees when search query changes
     fetchBranchFees();
-  }, [searchQuery]); // Add searchQuery to dependency array
+  }, [searchQuery]);
 
   const fetchBranchFees = () => {
+    // Note: The backend endpoint doesn't currently support search_query, but the frontend is ready if it's added.
     axios
-      .get(`http://localhost:8000/fees/branch?search_query=${searchQuery}`, { // Include search_query
+      .get(`http://localhost:8000/fees/branch?search_query=${searchQuery}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(res => setFees(res.data))
       .catch(() => alert("Failed to load fees"));
   };
 
-  const handleAssignFee = () => {
+  const handlePlanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedPlanId = e.target.value;
+    const selectedPlan = plans.find(p => p.id.toString() === selectedPlanId);
+
+    if (selectedPlan) {
+      setForm({
+        ...form,
+        plan_id: selectedPlanId,
+        fee_type: selectedPlan.plan_name,
+        amount: selectedPlan.price.toString(), // Auto-fill amount
+      });
+    } else {
+      // Reset if "Select Plan" is chosen
+      setForm({ ...form, plan_id: "", fee_type: "", amount: "" });
+    }
+  };
+
+  const handleSendNotification = () => {
     // Basic validation
     if (!form.user_id || !form.fee_type || !form.amount || !form.due_date) {
       alert("Please fill all fields.");
@@ -79,9 +117,10 @@ export default function ManageFees() {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(res => {
-        alert("Fee assigned successfully!");
-        setFees([...fees, res.data]);
-        setForm({ user_id: "", fee_type: "", amount: "", due_date: "" }); // Clear form
+        alert("Fee assigned and notification sent successfully!");
+        setFees([...fees, res.data]); // Add new fee to the list
+        fetchBranchFees(); // Or refetch to be safe
+        setForm({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" }); // Clear form
       })
       .catch(error => {
         console.error("Fee assign failed:", error.response?.data || error.message);
@@ -112,7 +151,8 @@ export default function ManageFees() {
 
       <div className="bg-white p-4 rounded shadow mb-6">
         <h3 className="text-xl font-semibold mb-3">Assign New Fee</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+          {/* User Selection */}
           <select
             value={form.user_id}
             onChange={e => setForm({ ...form, user_id: e.target.value })}
@@ -126,22 +166,30 @@ export default function ManageFees() {
             ))}
           </select>
 
-          <input
-            type="text"
-            placeholder="Fee Type (e.g., Monthly Membership)"
-            value={form.fee_type}
-            onChange={e => setForm({ ...form, fee_type: e.target.value })}
+          {/* Plan Selection (Replaces Fee Type Input) */}
+          <select
+            value={form.plan_id}
+            onChange={handlePlanChange}
             className="p-2 border rounded"
-          />
+          >
+            <option value="">Select Plan</option>
+            {plans.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.plan_name}
+              </option>
+            ))}
+          </select>
 
+          {/* Amount (Read-only, auto-filled) */}
           <input
             type="number"
             placeholder="Amount"
             value={form.amount}
-            onChange={e => setForm({ ...form, amount: e.target.value })}
-            className="p-2 border rounded"
+            readOnly // Make it read-only
+            className="p-2 border rounded bg-gray-100" // Style to show it's read-only
           />
 
+          {/* Due Date */}
           <input
             type="date"
             value={form.due_date}
@@ -149,8 +197,9 @@ export default function ManageFees() {
             className="p-2 border rounded"
           />
 
-          <button onClick={handleAssignFee} className="bg-blue-600 text-white px-4 py-2 rounded col-span-full md:col-span-1">
-            Assign Fee
+          {/* Button */}
+          <button onClick={handleSendNotification} className="bg-blue-600 text-white px-4 py-2 rounded md:col-span-2 lg:col-span-1">
+            Send Notification
           </button>
         </div>
       </div>
@@ -185,7 +234,6 @@ export default function ManageFees() {
               </thead>
               <tbody>
                 {fees.map(fee => {
-                  // Use fee.user directly from the Fee object
                   const userDisplayName = fee.user ? `${fee.user.name} (${fee.user.email})` : `User ID: ${fee.user_id}`;
                   return (
                     <tr key={fee.id} className="hover:bg-gray-50">

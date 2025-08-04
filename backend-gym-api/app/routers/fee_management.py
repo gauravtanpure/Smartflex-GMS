@@ -42,7 +42,12 @@ def assign_fee(
 
     db.commit()
     db.refresh(new_fee)
-    return new_fee
+
+    # FIX: Manually construct the response to include the nested user object
+    new_fee_dict = new_fee.__dict__.copy()
+    new_fee_dict['user'] = schemas.UserResponse.from_orm(user)
+    
+    return schemas.FeeAssignmentResponse(**new_fee_dict)
 
 # NEW ENDPOINT: Get all fee assignments for a branch (admin/superadmin only)
 @router.get("/branch", response_model=List[schemas.FeeAssignmentResponse])
