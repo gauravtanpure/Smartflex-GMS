@@ -293,7 +293,7 @@ export default function TrainerAttendance() {
   return (
     <div className="p-6 space-y-6" font-poppins>
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Manage My Branch Attendance</h1>
+        <h1 className="text-3xl font-bold" style={{ color: "#6b7e86" }}>Manage My Branch Attendance</h1>
         <div className="flex space-x-2">
           <Button onClick={fetchAttendanceRecords} disabled={loading}>
             <RefreshCcw className="mr-2 h-4 w-4" /> {loading ? "Refreshing..." : "Refresh"}

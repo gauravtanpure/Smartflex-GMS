@@ -102,19 +102,20 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           collapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200"> {/* Lighter border */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 h-14">
+
           {!collapsed && (
             <div className="flex items-center space-x-2">
               <img
                 src="/logo2.png" // Ensure this path is correct and image exists
                 alt="SmartFlex Fitness Logo"
-                className="w-auto h-8"
+                className="w-auto h-12"
               />
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" // Lighter hover
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors lg:hidden" // Lighter hover
           >
             <ChevronLeft
               className={cn(

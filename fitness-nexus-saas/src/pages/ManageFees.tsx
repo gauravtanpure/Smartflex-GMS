@@ -147,7 +147,7 @@ export default function ManageFees() {
 
   return (
     <div className="p-6" font-poppins>
-      <h2 className="text-2xl font-bold mb-4">Manage Fees</h2>
+      <h2 className="text-3xl font-bold mb-4" style={{ color: "#6b7e86" }}>Manage Fees</h2>
 
       <div className="bg-white p-4 rounded shadow mb-6">
         <h3 className="text-xl font-semibold mb-3">Assign New Fee</h3>

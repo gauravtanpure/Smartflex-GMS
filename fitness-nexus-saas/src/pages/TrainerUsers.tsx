@@ -78,7 +78,7 @@ export default function TrainerUsers() {
   return (
     <div className="p-6 space-y-6" font-poppins>
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">My Branch Users</h1>
+        <h1 className="text-3xl font-bold" style={{ color: "#6b7e86" }}>My Branch Users</h1>
         <Button onClick={fetchUsers} disabled={loading}>
           <RefreshCcw className="mr-2 h-4 w-4" /> {loading ? "Refreshing..." : "Refresh"}
         </Button>

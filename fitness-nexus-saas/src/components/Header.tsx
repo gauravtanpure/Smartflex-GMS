@@ -73,8 +73,8 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
         <div className="flex items-center space-x-4">
           <Button
             variant="ghost"
-            size="sm"
-            className="lg:hidden text-primary-foreground hover:bg-white/10"
+            size="sm" 
+            className="lg:hidden text-black hover:bg-black/10"
             onClick={onMenuClick}
           >
             <Menu className="w-5 h-5" />

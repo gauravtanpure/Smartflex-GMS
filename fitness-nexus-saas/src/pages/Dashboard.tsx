@@ -93,7 +93,7 @@ export default function Dashboard() {
   const attendanceMonthPct = (attendedDaysThisMonth / totalDaysInMonth) * 100;
 
   return (
-    <div className="min-h-screen pt-4 px-6 sm:px-8 lg:px-12 bg-background font-poppins">
+    <div className="min-h-screen pt-4 px-4 lg:px-6 bg-background font-poppins">
       <div className="max-w-7xl mx-auto space-y-6 text-[#6b7e86]">
         <div className="space-y-1">
           <h1 className="text-2xl md:text-3xl font-bold text-black">Welcome back,</h1>
