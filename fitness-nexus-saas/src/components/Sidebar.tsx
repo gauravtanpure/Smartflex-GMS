@@ -89,7 +89,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     <>
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden "
           onClick={onMobileClose}
         />
       )}
@@ -125,7 +125,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="p-3 space-y-1"> {/* Adjusted padding and spacing */}
+        <nav className="p-3 space-y-1" font-poppins> {/* Adjusted padding and spacing */}
           {/* Dashboard is for everyone */}
           <NavLink
             to="/dashboard"

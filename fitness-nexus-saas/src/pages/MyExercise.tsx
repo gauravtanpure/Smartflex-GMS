@@ -47,7 +47,7 @@ export default function MyExercise() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen font-poppins">
       <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-center">My Exercise Plans</h2>
       {exercisePlans.length === 0 ? (
         <p className="text-gray-600 text-center text-lg">No exercise plans assigned to you yet. Keep up the good work!</p>

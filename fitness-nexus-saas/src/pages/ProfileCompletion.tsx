@@ -601,7 +601,7 @@ export default function ProfileCompletion() {
   };
 
   return (
-    <div className="p-6 space-y-8 max-w-4xl mx-auto">
+    <div className="p-6 space-y-8 max-w-4xl mx-auto font-poppins">
       <h1 className="text-4xl font-extrabold text-center text-primary mb-8">Complete Your Profile</h1>
 
       {/* Profile Photo Section */}

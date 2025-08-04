@@ -146,7 +146,7 @@ export default function ManageFees() {
 
 
   return (
-    <div className="p-6">
+    <div className="p-6" font-poppins>
       <h2 className="text-2xl font-bold mb-4">Manage Fees</h2>
 
       <div className="bg-white p-4 rounded shadow mb-6">

@@ -208,7 +208,7 @@ export default function Trainers() {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" font-poppins>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

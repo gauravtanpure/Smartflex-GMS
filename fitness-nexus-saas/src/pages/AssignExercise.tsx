@@ -169,7 +169,7 @@ export default function AssignExercise() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" font-poppins>
       <h2 className="text-2xl font-bold mb-4">Assign Exercise Plan</h2>
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4 mb-8">
         <div>

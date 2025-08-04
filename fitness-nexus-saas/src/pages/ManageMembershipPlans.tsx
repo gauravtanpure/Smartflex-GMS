@@ -224,8 +224,8 @@ const ManageMembershipPlans = () => {
   const displayedPlans = plans || [];
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto p-4" font-poppins>
+      <div className="flex justify-between items-center mb-6" >
         <h1 className="text-3xl font-bold">Manage Membership Plans</h1>
         {(userRole === "admin" || userRole === "superadmin") && (
           <Button onClick={() => setIsCreateDialogOpen(true)}>Create New Plan</Button>
@@ -292,7 +292,7 @@ const ManageMembershipPlans = () => {
       </div>
 
       {/* Create New Plan Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} font-poppins>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create New Membership Plan</DialogTitle>

@@ -67,7 +67,7 @@ export default function Fees() {
   const totalPaidFees = fees.filter(f => f.is_paid).reduce((sum, f) => sum + f.amount, 0);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen font-poppins">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
