@@ -212,7 +212,7 @@ export default function Trainers() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Trainers</h1>
+          <h1 className="text-3xl font-bold text-foreground" style={{ color: "#6b7e86" }}>Trainers</h1>
           <p className="text-muted-foreground mt-1">Meet our certified fitness professionals</p>
         </div>
         <div className="flex items-center space-x-2">
