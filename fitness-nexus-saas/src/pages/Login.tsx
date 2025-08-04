@@ -1,11 +1,18 @@
 // src/pages/Login.tsx
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Login() {
@@ -22,7 +29,10 @@ export default function Login() {
       const res = await fetch("http://localhost:8000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ username: email, password: password }).toString(),
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+        }).toString(),
       });
 
       if (res.ok) {
@@ -31,12 +41,11 @@ export default function Login() {
         localStorage.setItem("username", data.user_data.name);
         localStorage.setItem("role", data.user_data.role);
         localStorage.setItem("branch", data.user_data.branch || "");
-        localStorage.setItem("user_id", data.user_data.id); // Store the user ID here
+        localStorage.setItem("user_id", data.user_data.id);
 
         toast({
           title: "Login Successful",
           description: `Welcome back, ${data.user_data.name}!`,
-          variant: "default",
         });
         navigate("/dashboard");
       } else {
@@ -48,7 +57,6 @@ export default function Login() {
         });
       }
     } catch (error) {
-      console.error("Login error:", error);
       toast({
         title: "Error",
         description: "An unexpected error occurred during login.",
@@ -58,21 +66,47 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <Card>
-          <CardHeader className="text-center space-y-2">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4 relative font-[Poppins]">
+      {/* Background Gym Stickers */}
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/3048/3048394.png"
+        alt="muscle flex"
+        className="absolute top-10 left-10 w-16 h-16 opacity-20 rotate-6"
+      />
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/1048/1048927.png"
+        alt="stopwatch"
+        className="absolute top-4 right-12 w-16 h-16 opacity-20 rotate-[8deg]"
+      />
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/869/869695.png"
+        alt="yoga stretch"
+        className="absolute bottom-20 left-14 w-16 h-16 opacity-20 rotate-[-10deg]"
+      />
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/677/677496.png"
+        alt="protein"
+        className="absolute bottom-10 right-16 w-16 h-16 opacity-20 rotate-[-8deg]"
+      />
+
+      {/* Card */}
+      <div className="w-full max-w-md relative z-10">
+        <Card className="bg-white/70 backdrop-blur-xl shadow-xl border-0 rounded-xl">
+          <CardHeader className="text-center space-y-1">
             <div className="flex justify-center items-center">
-              <Dumbbell className="h-10 w-10 text-primary" />
+              <img src="/logo2.png" alt="SmartFlex Logo" className="h-10" />
             </div>
-            <CardTitle className="text-3xl font-bold">Welcome Back!</CardTitle>
-            <CardDescription>
-              Sign in to your account to continue
+            <CardTitle className="text-2xl font-semibold text-gray-800">
+              Welcome Back!
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Sign in to your <span className="text-blue-600 font-medium">SmartFlex</span> account
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -83,7 +117,8 @@ export default function Login() {
                   required
                 />
               </div>
-              <div className="space-y-2">
+
+              <div className="space-y-1">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
@@ -110,14 +145,20 @@ export default function Login() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
+              <Button
+                type="submit"
+                className="w-full bg-[#6b7e86] hover:bg-[#5a6b72] text-white mt-2"
+              >
                 Sign In
               </Button>
             </form>
 
-            <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/register" className="text-primary hover:underline font-medium">
+            <div className="text-center text-sm text-muted-foreground mt-3">
+              Don&apos;t have an account?{" "}
+              <Link
+                to="/register"
+                className="text-primary hover:underline font-medium"
+              >
                 Sign up
               </Link>
             </div>

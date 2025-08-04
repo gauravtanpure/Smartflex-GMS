@@ -1,4 +1,5 @@
 // src/pages/Register.tsx
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dumbbell, Eye, EyeOff } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast"; // Import useToast
+import { Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,18 +29,18 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
-    confirmPassword: "", // Keep client-side for validation
-    role: "",
+    confirmPassword: "",
+    role: "member",
     phone: "",
     branch: "",
   });
+
   const navigate = useNavigate();
-  const { toast } = useToast(); // Initialize toast
+  const { toast } = useToast();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Client-side validation for password match
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Registration Failed",
@@ -49,7 +50,6 @@ export default function Register() {
       return;
     }
 
-    // Prepare data for backend (exclude confirmPassword)
     const dataToSend = {
       name: formData.name,
       email: formData.email,
@@ -60,31 +60,30 @@ export default function Register() {
     };
 
     try {
-      // --- CRITICAL CORRECTION HERE: Change the URL to /users/ ---
-      const res = await fetch("http://localhost:8000/users/", { // Corrected endpoint
+      const res = await fetch("http://localhost:8000/users/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSend), // Send dataToSend
+        body: JSON.stringify(dataToSend),
       });
 
       if (res.ok) {
         toast({
           title: "Registration Successful",
-          description: "Your account has been created. You can now log in.",
+          description: "Welcome! You can now log in.",
         });
         navigate("/login");
       } else {
         const errorData = await res.json();
         toast({
           title: "Registration Failed",
-          description: errorData.detail || "Something went wrong. Please try again.",
+          description: errorData.detail || "Something went wrong.",
           variant: "destructive",
         });
       }
-    } catch (err: any) {
+    } catch {
       toast({
         title: "Network Error",
-        description: "Could not connect to the server. Please try again later.",
+        description: "Could not connect to the server.",
         variant: "destructive",
       });
     }
@@ -95,28 +94,48 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
-      </div>
+    <div className="font-poppins min-h-screen w-full flex items-center justify-center relative overflow-hidden p-4 bg-gradient-to-br from-blue-50 to-blue-100">
 
-      <div className="w-full max-w-md relative">
-        <Card className="shadow-elevated border-0">
+      {/* Motivation & Gym Background Stickers */}
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/10494/10494446.png"
+        alt="dumbbell"
+        className="absolute top-10 left-10 w-16 h-16 opacity-20 rotate-12"
+      />
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/11686/11686333.png"
+        alt="train hard"
+        className="absolute top-5 right-14 w-16 h-16 opacity-20 rotate-[8deg]"
+      />
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/11829/11829378.png"
+        alt="boxing gloves"
+        className="absolute bottom-20 right-10 w-20 h-20 opacity-20 rotate-[-10deg]"
+      />
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/11829/11829384.png"
+        alt="strong arms"
+        className="absolute bottom-14 left-16 w-16 h-16 opacity-20 rotate-6"
+      />
+
+      {/* Registration Card */}
+      <div className="w-full max-w-lg relative z-10">
+        <Card className="bg-white/70 backdrop-blur-xl shadow-xl border-0 rounded-xl">
           <CardHeader className="text-center pb-2">
-            <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-                <Dumbbell className="w-6 h-6 text-primary-foreground" />
-              </div>
+            <div className="flex justify-center mb-2">
+              <img src="/logo2.png" alt="SmartFlex Logo" className="h-10" />
             </div>
-            <CardTitle className="text-2xl font-bold">Join SmartFlex</CardTitle>
-            <CardDescription>Create your account to get started</CardDescription>
+            <CardTitle className="text-2xl font-bold text-gray-800">
+              Create Your Account
+            </CardTitle>
+            <CardDescription className="text-muted-foreground text-sm">
+              Join <span className="text-blue-600 font-semibold">SmartFlex</span> and start your fitness journey.
+            </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-4">
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="space-y-2">
+          <CardContent>
+            <form onSubmit={handleRegister} className="space-y-3">
+              <div className="space-y-1">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
@@ -128,7 +147,7 @@ export default function Register() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -140,7 +159,7 @@ export default function Register() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
@@ -152,109 +171,109 @@ export default function Register() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => handleInputChange("role", value)}
-                  required // Make role selection required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    {/* Trainer and Admin roles are typically assigned by an admin, not during self-registration */}
-                    {/* <SelectItem value="trainer">Trainer</SelectItem> */}
-                    {/* <SelectItem value="admin">Branch Admin</SelectItem> */}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="branch">Branch</Label>
-                <Select
-                  value={formData.branch}
-                  onValueChange={(value) => handleInputChange("branch", value)}
-                  required // Make branch selection required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pune Branch">Pune Branch</SelectItem>
-                    <SelectItem value="Mumbai Branch">Mumbai Branch</SelectItem>
-                    <SelectItem value="Nagpur Branch">Nagpur Branch</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      handleInputChange("password", e.target.value)
-                    }
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="role">Role</Label>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value) => handleInputChange("role", value)}
                     required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="branch">Branch</Label>
+                  <Select
+                    value={formData.branch}
+                    onValueChange={(value) => handleInputChange("branch", value)}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pune Branch">Pune Branch</SelectItem>
+                      <SelectItem value="Mumbai Branch">Mumbai Branch</SelectItem>
+                      <SelectItem value="Nagpur Branch">Nagpur Branch</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      handleInputChange("confirmPassword", e.target.value)
-                    }
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        handleInputChange("confirmPassword", e.target.value)
+                      }
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
+              <Button
+                type="submit"
+                className="w-full mt-4 bg-[#6b7e86] hover:bg-[#5a6b72] text-white"
+              >
                 Create Account
               </Button>
             </form>
 
-            <div className="text-center text-sm text-muted-foreground">
+            <div className="text-center text-sm text-muted-foreground mt-3">
               Already have an account?{" "}
               <Link
                 to="/login"
