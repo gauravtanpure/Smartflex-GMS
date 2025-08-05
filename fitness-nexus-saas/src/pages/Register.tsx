@@ -30,7 +30,7 @@ export default function Register() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "member",
+    gender: "",
     phone: "",
     branch: "",
   });
@@ -54,7 +54,7 @@ export default function Register() {
       name: formData.name,
       email: formData.email,
       password: formData.password,
-      role: formData.role,
+      gender: formData.gender,
       phone: formData.phone,
       branch: formData.branch,
     };
@@ -173,19 +173,22 @@ export default function Register() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="gender">Gender</Label>
                   <Select
-                    value={formData.role}
-                    onValueChange={(value) => handleInputChange("role", value)}
+                    value={formData.gender}
+                    onValueChange={(value) => handleInputChange("gender", value)}
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your role" />
+                      <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+
                 </div>
 
                 <div className="space-y-1">

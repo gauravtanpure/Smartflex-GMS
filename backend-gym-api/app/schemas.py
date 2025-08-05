@@ -7,7 +7,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     phone: str
-    role: str
+    gender: str
     branch: Optional[str] = None
 
 class UserLogin(BaseModel):
@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     phone: str
     role: str
+    gender: Optional[str] = None
     branch: Optional[str] = None
 
     class Config:

@@ -13,6 +13,7 @@ class User(Base):
     password = Column(String)
     phone = Column(String)
     role = Column(String, default="member")
+    gender = Column(String)  # ✅ add this if not yet
     branch = Column(String, nullable=True)
 
     # Add relationships for diet and exercise plans
