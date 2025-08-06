@@ -26,6 +26,7 @@ import AssignExercise from "./pages/AssignExercise";
 // New imports for member viewing pages
 import MyDiet from "./pages/MyDiet";
 import MyExercise from "./pages/MyExercise";
+import BranchUserList from "./pages/BranchUserList";
 import ManageMembershipPlans from "./pages/ManageMembershipPlans"; // ⬅️ NEW IMPORT
 
 const queryClient = new QueryClient();
@@ -132,6 +133,10 @@ const App = () => {
             element={renderProtectedRoute(ManageMembershipPlans, ["admin", "superadmin"])}
           />
 
+          <Route
+            path="/branch-users"
+            element={renderProtectedRoute(BranchUserList, ["admin"])}
+          />
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

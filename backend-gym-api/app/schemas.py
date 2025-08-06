@@ -311,3 +311,15 @@ class MembershipPlanUpdate(BaseModel):
     price: Optional[float] = None
     duration_months: Optional[int] = None
     is_approved: Optional[bool] = None # ⬅️ NEW FIELD for update
+
+class EnrolledUserInfo(BaseModel):
+    user_id: int
+    name: str
+    date_joined: Optional[datetime]
+    opted_plan: Optional[str]
+    status: Optional[str]
+    gender: Optional[str]
+    age: Optional[int]
+
+    class Config:
+        from_attributes = True
