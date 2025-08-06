@@ -1,4 +1,3 @@
-// ManageFees.tsx
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -8,7 +7,6 @@ interface User {
   email: string;
 }
 
-// Interface for a single Fee assignment
 interface Fee {
   id: number;
   user_id: number;
@@ -28,7 +26,6 @@ interface Fee {
   };
 }
 
-// Interface for a single Membership Plan
 interface Plan {
   id: number;
   plan_name: string;
@@ -38,43 +35,42 @@ interface Plan {
 export default function ManageFees() {
   const [users, setUsers] = useState<User[]>([]);
   const [fees, setFees] = useState<Fee[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]); // State for membership plans
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [form, setForm] = useState({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" });
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "unpaid">("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const feesPerPage = 6;
 
   const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch users for the dropdown
         const usersRes = await axios.get("http://localhost:8000/users/branch-users", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(usersRes.data);
 
-        // Fetch approved membership plans for the branch
         const plansRes = await axios.get("http://localhost:8000/membership-plans/", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPlans(plansRes.data);
-
-      } catch (error) {
-        alert("Failed to load initial data (users or plans).");
+      } catch {
+        alert("Failed to load users or plans.");
       }
     };
 
     fetchInitialData();
-    fetchBranchFees(); // Initial fetch for fees
+    fetchBranchFees();
   }, [token]);
 
   useEffect(() => {
-    // Refetch fees when search query changes
     fetchBranchFees();
   }, [searchQuery]);
 
   const fetchBranchFees = () => {
-    // Note: The backend endpoint doesn't currently support search_query, but the frontend is ready if it's added.
     axios
       .get(`http://localhost:8000/fees/branch?search_query=${searchQuery}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -84,24 +80,20 @@ export default function ManageFees() {
   };
 
   const handlePlanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedPlanId = e.target.value;
-    const selectedPlan = plans.find(p => p.id.toString() === selectedPlanId);
-
+    const selectedPlan = plans.find(p => p.id.toString() === e.target.value);
     if (selectedPlan) {
       setForm({
         ...form,
-        plan_id: selectedPlanId,
+        plan_id: selectedPlan.id.toString(),
         fee_type: selectedPlan.plan_name,
-        amount: selectedPlan.price.toString(), // Auto-fill amount
+        amount: selectedPlan.price.toString(),
       });
     } else {
-      // Reset if "Select Plan" is chosen
       setForm({ ...form, plan_id: "", fee_type: "", amount: "" });
     }
   };
 
   const handleSendNotification = () => {
-    // Basic validation
     if (!form.user_id || !form.fee_type || !form.amount || !form.due_date) {
       alert("Please fill all fields.");
       return;
@@ -116,14 +108,12 @@ export default function ManageFees() {
       }, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then(res => {
-        alert("Fee assigned and notification sent successfully!");
-        setFees([...fees, res.data]); // Add new fee to the list
-        fetchBranchFees(); // Or refetch to be safe
-        setForm({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" }); // Clear form
+      .then(() => {
+        alert("Fee assigned successfully!");
+        fetchBranchFees();
+        setForm({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" });
       })
       .catch(error => {
-        console.error("Fee assign failed:", error.response?.data || error.message);
         alert(`Fee assign failed: ${error.response?.data?.detail || "Unknown error"}`);
       });
   };
@@ -133,26 +123,71 @@ export default function ManageFees() {
       .put(`http://localhost:8000/fees/${feeId}/status`, { is_paid: !currentStatus }, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then(res => {
-        alert("Payment status updated!");
-        // Update the state to reflect the change
-        setFees(fees.map(fee => (fee.id === feeId ? { ...fee, is_paid: res.data.is_paid } : fee)));
+      .then(() => {
+        fetchBranchFees();
       })
-      .catch(error => {
-        console.error("Failed to update payment status:", error.response?.data || error.message);
-        alert(`Failed to update payment status: ${error.response?.data?.detail || "Unknown error"}`);
-      });
+      .catch(() => alert("Failed to update payment status."));
   };
 
+  const filteredFees = fees.filter(fee => {
+    if (filterStatus === "paid") return fee.is_paid;
+    if (filterStatus === "unpaid") return !fee.is_paid;
+    return true;
+  });
+
+  const exportToCSV = () => {
+    const rows = [
+      ["User Name", "Email", "Fee Type", "Amount", "Due Date", "Branch", "Status"],
+      ...filteredFees.map(fee => [
+        fee.user?.name || "N/A",
+        fee.user?.email || "N/A",
+        fee.fee_type,
+        `₹${fee.amount.toFixed(2)}`,
+        fee.due_date,
+        fee.branch_name || "N/A",
+        fee.is_paid ? "Paid" : "Unpaid"
+      ])
+    ];
+
+    const csvContent = rows.map(row => row.map(item => `"${item}"`).join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fee_assignments.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
+  const totalPages = Math.ceil(filteredFees.length / feesPerPage);
+  const paginatedFees = filteredFees.slice(
+    (currentPage - 1) * feesPerPage,
+    currentPage * feesPerPage
+  );
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
 
   return (
     <div className="p-6" font-poppins>
-      <h2 className="text-3xl font-bold mb-4" style={{ color: "#6b7e86" }}>Manage Fees</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-3xl font-bold" style={{ color: "#6b7e86" }}>Manage Fees</h2>
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={exportToCSV}
+        >
+          Export CSV
+        </button>
+      </div>
 
+      {/* Assign New Fee */}
       <div className="bg-white p-4 rounded shadow mb-6">
         <h3 className="text-xl font-semibold mb-3">Assign New Fee</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
-          {/* User Selection */}
           <select
             value={form.user_id}
             onChange={e => setForm({ ...form, user_id: e.target.value })}
@@ -160,13 +195,10 @@ export default function ManageFees() {
           >
             <option value="">Select User</option>
             {users.map(u => (
-              <option key={u.id} value={u.id}>
-                {u.name} ({u.email})
-              </option>
+              <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
             ))}
           </select>
 
-          {/* Plan Selection (Replaces Fee Type Input) */}
           <select
             value={form.plan_id}
             onChange={handlePlanChange}
@@ -174,22 +206,18 @@ export default function ManageFees() {
           >
             <option value="">Select Plan</option>
             {plans.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.plan_name}
-              </option>
+              <option key={p.id} value={p.id}>{p.plan_name}</option>
             ))}
           </select>
 
-          {/* Amount (Read-only, auto-filled) */}
           <input
             type="number"
             placeholder="Amount"
             value={form.amount}
-            readOnly // Make it read-only
-            className="p-2 border rounded bg-gray-100" // Style to show it's read-only
+            readOnly
+            className="p-2 border rounded bg-gray-100"
           />
 
-          {/* Due Date */}
           <input
             type="date"
             value={form.due_date}
@@ -197,76 +225,118 @@ export default function ManageFees() {
             className="p-2 border rounded"
           />
 
-          {/* Button */}
-          <button onClick={handleSendNotification} className="bg-blue-600 text-white px-4 py-2 rounded md:col-span-2 lg:col-span-1">
+          <button
+            onClick={handleSendNotification}
+            className="bg-blue-600 text-white px-4 py-2 rounded md:col-span-2 lg:col-span-1"
+          >
             Send Notification
           </button>
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+        <input
+          type="text"
+          placeholder="Search by name or email"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="p-2 border rounded w-full md:w-1/2"
+        />
+
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as any)}
+          className="p-2 border rounded w-full md:w-[200px]"
+        >
+          <option value="all">All Status</option>
+          <option value="paid">Paid</option>
+          <option value="unpaid">Unpaid</option>
+        </select>
+      </div>
+
+      {/* Fee Table */}
       <div className="bg-white p-4 rounded shadow">
-        <h3 className="text-xl font-semibold mb-3">Existing Fee Assignments</h3>
-        {/* Search Input */}
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search by user name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="p-2 border rounded w-full"
-          />
-        </div>
-        {fees.length === 0 ? (
-          <p>No fee assignments found for your branch.</p>
+        {filteredFees.length === 0 ? (
+          <p>No fee assignments found.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 border-b">User Name</th>
-                  <th className="px-4 py-2 border-b">Fee Type</th>
-                  <th className="px-4 py-2 border-b">Amount</th>
-                  <th className="px-4 py-2 border-b">Due Date</th>
-                  <th className="px-4 py-2 border-b">Branch</th>
-                  <th className="px-4 py-2 border-b">Paid Status</th>
-                  <th className="px-4 py-2 border-b">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fees.map(fee => {
-                  const userDisplayName = fee.user ? `${fee.user.name} (${fee.user.email})` : `User ID: ${fee.user_id}`;
-                  return (
-                    <tr key={fee.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 border-b text-center">{userDisplayName}</td>
-                      <td className="px-4 py-2 border-b text-center">{fee.fee_type}</td>
-                      <td className="px-4 py-2 border-b text-center">₹{fee.amount.toFixed(2)}</td>
-                      <td className="px-4 py-2 border-b text-center">{fee.due_date}</td>
-                      <td className="px-4 py-2 border-b text-center">{fee.branch_name || "N/A"}</td>
-                      <td className="px-4 py-2 border-b text-center">
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2 border-b">User</th>
+                    <th className="px-4 py-2 border-b">Fee Type</th>
+                    <th className="px-4 py-2 border-b">Amount</th>
+                    <th className="px-4 py-2 border-b">Due Date</th>
+                    <th className="px-4 py-2 border-b">Branch</th>
+                    <th className="px-4 py-2 border-b">Status</th>
+                    <th className="px-4 py-2 border-b">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedFees.map(fee => {
+                    const userDisplay = fee.user ? `${fee.user.name} (${fee.user.email})` : `User ID: ${fee.user_id}`;
+                    return (
+                      <tr key={fee.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 border-b text-center">{userDisplay}</td>
+                        <td className="px-4 py-2 border-b text-center">{fee.fee_type}</td>
+                        <td className="px-4 py-2 border-b text-center">₹{fee.amount.toFixed(2)}</td>
+                        <td className="px-4 py-2 border-b text-center">{fee.due_date}</td>
+                        <td className="px-4 py-2 border-b text-center">{fee.branch_name || "N/A"}</td>
+                        <td className="px-4 py-2 border-b text-center">
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
                             fee.is_paid ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {fee.is_paid ? "Paid" : "Unpaid"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 border-b text-center">
-                        <button
-                          onClick={() => handleTogglePaidStatus(fee.id, fee.is_paid)}
-                          className={`px-3 py-1 rounded text-white text-sm ${
-                            fee.is_paid ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-500 hover:bg-green-600"
-                          }`}
-                        >
-                          {fee.is_paid ? "Mark Unpaid" : "Mark Paid"}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          }`}>
+                            {fee.is_paid ? "Paid" : "Unpaid"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 border-b text-center">
+                          <button
+                            onClick={() => handleTogglePaidStatus(fee.id, fee.is_paid)}
+                            className={`px-3 py-1 rounded text-white text-sm ${
+                              fee.is_paid ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-500 hover:bg-green-600"
+                            }`}
+                          >
+                            {fee.is_paid ? "Mark Unpaid" : "Mark Paid"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-center mt-4 space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border rounded disabled:opacity-50"
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => handlePageChange(i + 1)}
+                  className={`px-3 py-1 border rounded ${
+                    currentPage === i + 1 ? "bg-blue-600 text-white" : ""
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
