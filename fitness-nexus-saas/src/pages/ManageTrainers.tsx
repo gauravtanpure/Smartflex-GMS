@@ -176,64 +176,139 @@ export default function ManageTrainers() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-lg p-6">
           <DialogHeader>
-            <DialogTitle>{editTrainerId ? "Edit Trainer" : "Add Trainer"}</DialogTitle>
-            <DialogDescription>Fill out trainer details</DialogDescription>
+            <DialogTitle className="text-xl font-bold">
+              {editTrainerId ? "Edit Trainer" : "Add New Trainer"}
+            </DialogTitle>
+            <DialogDescription>
+              Fill in the trainer's information to {editTrainerId ? "update their profile" : "add them to the system"}.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Name</Label>
-              <Input className="col-span-3" value={newTrainer.name} onChange={(e) => setNewTrainer({ ...newTrainer, name: e.target.value })} />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="Enter trainer name"
+                value={newTrainer.name}
+                onChange={(e) => setNewTrainer({ ...newTrainer, name: e.target.value })}
+              />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Specialization</Label>
-              <div className="col-span-3">
-                <Select
-                  isMulti
-                  options={specializationOptions}
-                  value={specializationOptions.filter(opt => newTrainer.specialization.includes(opt.value))}
-                  onChange={(selected) => setNewTrainer({ ...newTrainer, specialization: selected.map(s => s.value) })}
-                />
-              </div>
+
+            <div>
+              <Label htmlFor="specialization">Specialization</Label>
+              <Select
+                isMulti
+                options={specializationOptions}
+                value={specializationOptions.filter((opt) =>
+                  newTrainer.specialization.includes(opt.value)
+                )}
+                onChange={(selected) =>
+                  setNewTrainer({
+                    ...newTrainer,
+                    specialization: selected.map((s) => s.value),
+                  })
+                }
+              />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Rating</Label>
-              <Input className="col-span-3" type="number" value={newTrainer.rating} onChange={(e) => setNewTrainer({ ...newTrainer, rating: parseFloat(e.target.value) || 0 })} />
+
+            <div>
+              <Label htmlFor="rating">Rating</Label>
+              <Input
+                id="rating"
+                type="number"
+                step="0.1"
+                placeholder="e.g., 4.5"
+                value={newTrainer.rating}
+                onChange={(e) =>
+                  setNewTrainer({ ...newTrainer, rating: parseFloat(e.target.value) || 0 })
+                }
+              />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Experience</Label>
-              <Input className="col-span-3" type="number" value={newTrainer.experience} onChange={(e) => setNewTrainer({ ...newTrainer, experience: parseInt(e.target.value) || 0 })} />
+
+            <div>
+              <Label htmlFor="experience">Experience (years)</Label>
+              <Input
+                id="experience"
+                type="number"
+                placeholder="e.g., 2"
+                value={newTrainer.experience}
+                onChange={(e) =>
+                  setNewTrainer({ ...newTrainer, experience: parseInt(e.target.value) || 0 })
+                }
+              />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Phone</Label>
-              <Input className="col-span-3" value={newTrainer.phone} onChange={(e) => setNewTrainer({ ...newTrainer, phone: e.target.value })} />
+
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                placeholder="e.g., 9876543210"
+                value={newTrainer.phone}
+                onChange={(e) => setNewTrainer({ ...newTrainer, phone: e.target.value })}
+              />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Email</Label>
-              <Input className="col-span-3" value={newTrainer.email} onChange={(e) => setNewTrainer({ ...newTrainer, email: e.target.value })} />
+
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="e.g., trainer@example.com"
+                value={newTrainer.email}
+                onChange={(e) => setNewTrainer({ ...newTrainer, email: e.target.value })}
+              />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Password</Label>
-              <Input className="col-span-3" type="password" value={newTrainer.password} onChange={(e) => setNewTrainer({ ...newTrainer, password: e.target.value })} />
+
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder={editTrainerId ? "Leave blank to keep current" : "Enter password"}
+                value={newTrainer.password}
+                onChange={(e) => setNewTrainer({ ...newTrainer, password: e.target.value })}
+              />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Availability</Label>
-              <Textarea className="col-span-3" value={newTrainer.availability} onChange={(e) => setNewTrainer({ ...newTrainer, availability: e.target.value })} />
+
+            <div>
+              <Label htmlFor="availability">Availability</Label>
+              <Textarea
+                id="availability"
+                placeholder="e.g., Mon-Fri 10AM to 6PM"
+                value={newTrainer.availability}
+                onChange={(e) => setNewTrainer({ ...newTrainer, availability: e.target.value })}
+              />
             </div>
+
             {localStorage.getItem("role") === "superadmin" && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Branch</Label>
-                <Input className="col-span-3" value={newTrainer.branch_name} onChange={(e) => setNewTrainer({ ...newTrainer, branch_name: e.target.value })} />
+              <div className="sm:col-span-2">
+                <Label htmlFor="branch">Branch Name</Label>
+                <Input
+                  id="branch"
+                  placeholder="e.g., Pune Branch"
+                  value={newTrainer.branch_name}
+                  onChange={(e) =>
+                    setNewTrainer({ ...newTrainer, branch_name: e.target.value })
+                  }
+                />
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveTrainer}>{editTrainerId ? "Update" : "Add"}</Button>
+
+          <DialogFooter className="pt-4">
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTrainer}>
+              {editTrainerId ? "Update Trainer" : "Add Trainer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

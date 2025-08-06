@@ -15,16 +15,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast"; // Import useToast
+import { useToast } from "@/components/ui/use-toast";
 
 // Define the interface for an Admin (which is essentially a User with role 'admin')
 interface Admin {
-  id?: number; // Add id as it might be returned from backend
+  id?: number;
   name: string;
   email: string;
-  password?: string; // Optional for creation, not returned on fetch
+  password?: string;
   phone?: string;
-  role: string; // Should be 'admin'
+  gender: string; // Add the gender field to the Admin interface
+  role: string;
   branch: string;
 }
 
@@ -35,8 +36,6 @@ interface Branch {
 }
 
 export default function ManageBranches() {
-  // Use a fixed list of branch names for demonstration.
-  // In a real app, you might fetch these from a /branches API endpoint.
   const branchNames = ["Pune Branch", "Mumbai Branch", "Nagpur Branch"];
 
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -46,52 +45,50 @@ export default function ManageBranches() {
     email: "",
     password: "",
     phone: "",
-    role: "admin", // Default role for new admin
-    branch: "", // Will be set when a branch is selected
+    gender: "", // Initialize gender state
+    role: "admin",
+    branch: "",
   });
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true); // Add loading state
-  const [error, setError] = useState<string | null>(null); // Add error state
-  const { toast } = useToast(); // Initialize toast
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  // Function to open the dialog for a specific branch
   const openDialog = (branch: Branch) => {
     setSelectedBranch(branch);
-    // Reset newAdmin form fields and set the branch for the new admin
+    // Reset newAdmin form fields and set the branch for the new admin, including gender
     setNewAdmin({
       name: "",
       email: "",
       password: "",
       phone: "",
+      gender: "", // Reset gender field
       role: "admin",
       branch: branch.name,
     });
     setDialogOpen(true);
   };
 
-  // Function to close the dialog
   const closeDialog = () => {
     setDialogOpen(false);
     setSelectedBranch(null);
     setNewAdmin({ // Reset form completely on close
-      name: "", email: "", password: "", phone: "", role: "admin", branch: ""
+      name: "", email: "", password: "", phone: "", gender: "", role: "admin", branch: ""
     });
   };
 
-  // Function to fetch all users and filter them into branches
   const fetchAdmins = async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem("token"); // Get token for authorization
+      const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("Authentication token not found.");
       }
 
-      // Fetch ALL users from the backend
       const res = await fetch("http://localhost:8000/users/", {
         headers: {
-          Authorization: `Bearer ${token}`, // Include the token
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
@@ -101,14 +98,12 @@ export default function ManageBranches() {
         throw new Error(errorData.detail || "Failed to fetch users from backend.");
       }
 
-      const data: Admin[] = await res.json(); // Data should be an array of users
+      const data: Admin[] = await res.json();
 
-      // IMPORTANT: Add a defensive check if data is not an array
       if (!Array.isArray(data)) {
         throw new Error("Unexpected data format from server. Expected an array of users.");
       }
 
-      // Group users by branch, filtering for 'admin' role
       const grouped: Branch[] = branchNames.map((name) => ({
         name,
         admins: data.filter((user: Admin) => user.role === "admin" && user.branch === name),
@@ -128,23 +123,22 @@ export default function ManageBranches() {
     }
   };
 
-  // Fetch admins when the component mounts
   useEffect(() => {
     fetchAdmins();
   }, []);
 
-  // Handler for adding a new admin
   const handleAddAdmin = async () => {
-    // Basic validation
+    // Basic validation, now including gender
     if (
       !selectedBranch ||
       !newAdmin.name.trim() ||
       !newAdmin.email.trim() ||
-      !newAdmin.password?.trim()
+      !newAdmin.password?.trim() ||
+      !newAdmin.gender?.trim()
     ) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields (Name, Email, Password).",
+        description: "Please fill in all required fields (Name, Email, Password, Gender).",
         variant: "destructive",
       });
       return;
@@ -156,26 +150,25 @@ export default function ManageBranches() {
         throw new Error("Authentication token not found.");
       }
 
-      // Use the general user creation endpoint
-      const response = await fetch("http://localhost:8000/users/", { // Correct endpoint
+      const response = await fetch("http://localhost:8000/users/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Include the token
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: newAdmin.name,
           email: newAdmin.email,
           password: newAdmin.password,
-          phone: newAdmin.phone || "1234567890", // Provide a default phone if optional
-          role: "admin", // Explicitly set role to 'admin'
-          branch: selectedBranch.name, // Assign to the selected branch
+          phone: newAdmin.phone || "1234567890",
+          gender: newAdmin.gender, // Send the gender field
+          role: "admin",
+          branch: selectedBranch.name,
         }),
       });
 
       if (!response.ok) {
         const err = await response.json();
-        // Use toast for error messages
         toast({
           title: "Failed to add admin",
           description: err.detail || "An error occurred on the server.",
@@ -184,17 +177,15 @@ export default function ManageBranches() {
         return;
       }
 
-      // If successful, refetch admins and show success toast
       await fetchAdmins();
       toast({
         title: "Success",
         description: "Admin added successfully ✅",
         variant: "success",
       });
-      closeDialog(); // Close the dialog
+      closeDialog();
     } catch (error) {
       console.error("Error adding admin:", error);
-      // Use toast for server errors
       toast({
         title: "Server Error",
         description: (error as Error).message || "An unexpected server error occurred. Please try again.",
@@ -243,96 +234,128 @@ export default function ManageBranches() {
       )}
 
       {/* Dialog for managing admins in a selected branch */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Admins of {selectedBranch?.name}</DialogTitle>
-          </DialogHeader>
+<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+  <DialogContent className="w-full max-w-xl max-h-[90vh] overflow-y-auto sm:rounded-lg p-6">
+    <DialogHeader>
+      <DialogTitle className="text-xl font-bold">
+        Admins of {selectedBranch?.name}
+      </DialogTitle>
+    </DialogHeader>
 
-          {/* Display existing admins */}
-          <div className="space-y-4 max-h-64 overflow-y-auto pr-2"> {/* Added pr-2 for scrollbar space */}
-            {selectedBranch?.admins.length === 0 ? (
-              <p className="text-muted-foreground">No admins assigned to this branch yet.</p>
-            ) : (
-              selectedBranch?.admins.map((admin, i) => (
-                <div
-                  key={i}
-                  className="border p-3 rounded-md flex justify-between items-center bg-card"
-                >
-                  <div>
-                    <p><strong>Name:</strong> {admin.name}</p>
-                    <p><strong>Email:</strong> {admin.email}</p>
-                    <p><strong>Phone:</strong> {admin.phone || 'N/A'}</p>
-                  </div>
-                  {/* You can add edit/delete buttons here if needed */}
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Form to add new admin */}
-          <div className="border-t pt-4 mt-4 space-y-3">
-            <h3 className="font-semibold text-lg">Add New Admin to {selectedBranch?.name}</h3>
-            <div className="grid gap-3">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={newAdmin.name}
-                  onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
-                  placeholder="Enter admin name"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newAdmin.email}
-                  onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
-                  placeholder="Enter admin email"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newAdmin.password}
-                  onChange={(e) =>
-                    setNewAdmin({ ...newAdmin, password: e.target.value })
-                  }
-                  placeholder="Enter password"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={newAdmin.phone}
-                  onChange={(e) =>
-                    setNewAdmin({ ...newAdmin, phone: e.target.value })
-                  }
-                  placeholder="Enter phone number (optional)"
-                />
-              </div>
+    {/* Display existing admins */}
+    <div className="space-y-4 mb-6">
+      {selectedBranch?.admins.length === 0 ? (
+        <p className="text-muted-foreground">
+          No admins assigned to this branch yet.
+        </p>
+      ) : (
+        selectedBranch?.admins.map((admin, i) => (
+          <div
+            key={i}
+            className="border p-3 rounded-md bg-muted/20 flex flex-col sm:flex-row sm:justify-between sm:items-center"
+          >
+            <div className="text-sm space-y-1">
+              <p><strong>Name:</strong> {admin.name}</p>
+              <p><strong>Email:</strong> {admin.email}</p>
+              <p><strong>Phone:</strong> {admin.phone || "N/A"}</p>
+              <p><strong>Gender:</strong> {admin.gender || "N/A"}</p>
             </div>
-            <Button className="w-full mt-2" onClick={handleAddAdmin}>
-              Add Admin
-            </Button>
           </div>
+        ))
+      )}
+    </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    {/* Add New Admin Form */}
+    <div className="border-t pt-4 mt-4 space-y-4">
+      <h3 className="text-lg font-semibold border-b pb-2">
+        Add New Admin to {selectedBranch?.name}
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="name">Name</Label>
+          <Input
+            id="name"
+            value={newAdmin.name}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, name: e.target.value })
+            }
+            placeholder="Enter admin name"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={newAdmin.email}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, email: e.target.value })
+            }
+            placeholder="Enter admin email"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={newAdmin.password}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, password: e.target.value })
+            }
+            placeholder="Enter password"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            id="phone"
+            type="tel"
+            value={newAdmin.phone}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, phone: e.target.value })
+            }
+            placeholder="Enter phone number"
+          />
+        </div>
+        <div>
+          <Label htmlFor="gender">Gender</Label>
+          <Input
+            id="gender"
+            value={newAdmin.gender}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, gender: e.target.value })
+            }
+            placeholder="Enter gender (e.g., Male/Female/Other)"
+            required
+          />
+        </div>
+      </div>
+      <Button
+        className="w-full mt-2"
+        onClick={handleAddAdmin}
+        disabled={
+          !newAdmin.name.trim() ||
+          !newAdmin.email.trim() ||
+          !newAdmin.password?.trim() ||
+          !newAdmin.gender?.trim()
+        }
+      >
+        Add Admin
+      </Button>
+    </div>
+
+    <DialogFooter className="pt-4">
+      <Button variant="outline" className="w-full" onClick={closeDialog}>
+        Close
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
     </div>
   );
 }

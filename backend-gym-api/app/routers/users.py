@@ -54,7 +54,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
         email=user.email,
         password=hashed_password,
         phone=user.phone,
-        role="member",
+        role=user.role,
         gender=user.gender,
         branch=user.branch
     )

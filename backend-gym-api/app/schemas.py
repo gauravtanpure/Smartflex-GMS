@@ -9,6 +9,7 @@ class UserCreate(BaseModel):
     phone: str
     gender: str
     branch: Optional[str] = None
+    role: str = "member"
 
 class UserLogin(BaseModel):
     email: EmailStr
