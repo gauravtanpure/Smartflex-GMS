@@ -277,13 +277,13 @@ def get_my_diet_plans(
     current_user: schemas.UserResponse = Depends(get_current_active_user)
 ):
     diet_plans = db.query(models.DietPlan).filter(models.DietPlan.user_id == current_user.id).all()
-    
+
     result = []
     for dp in diet_plans:
         dp_dict = dp.__dict__.copy()
 
         user_data = db.query(models.User).filter(models.User.id == dp.user_id).first()
-        dp_dict['user'] = schemas.UserResponse.from_orm(user_data) if user_data else schemas.UserResponse(id=dp.user_id, name="Unknown User", email="", phone="", role="member", branch=None)
+        dp_dict['user'] = schemas.UserResponse.from_orm(user_data) if user_data else schemas.UserResponse(id=dp.user_id, name="Unknown User", email="", phone="", role="member", branch=None, gender=None)
 
         trainer_data = db.query(models.Trainer).filter(models.Trainer.id == dp.assigned_by_trainer_id).first()
         if trainer_data:
@@ -308,7 +308,7 @@ def get_my_exercise_plans(
         ep_dict = ep.__dict__.copy()
 
         user_data = db.query(models.User).filter(models.User.id == ep.user_id).first()
-        ep_dict['user'] = schemas.UserResponse.from_orm(user_data) if user_data else schemas.UserResponse(id=ep.user_id, name="Unknown User", email="", phone="", role="member", branch=None)
+        ep_dict['user'] = schemas.UserResponse.from_orm(user_data) if user_data else schemas.UserResponse(id=ep.user_id, name="Unknown User", email="", phone="", role="member", branch=None, gender=None)
 
         trainer_data = db.query(models.Trainer).filter(models.Trainer.id == ep.assigned_by_trainer_id).first()
         if trainer_data:
@@ -368,9 +368,15 @@ def delete_user(user_id: int, db: Session = Depends(database.get_db)):
 def save_profile_data(member: schemas.MemberCreate, db: Session = Depends(database.get_db)):
     existing = db.query(models.Member).filter(models.Member.user_id == member.user_id).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Profile already exists")
+        # If profile exists, update it instead of raising an error
+        update_data = member.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(existing, key, value)
+        db.commit()
+        db.refresh(existing)
+        return {"message": "Profile data updated successfully"}
 
-    new_member = models.Member(**member.dict())
+    new_member = models.Member(**member.model_dump())
     db.add(new_member)
     db.commit()
     db.refresh(new_member)

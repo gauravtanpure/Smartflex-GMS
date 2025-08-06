@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; // Import useRef
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/components/ui/use-toast";
-import { UserCircle } from "lucide-react"; // Import UserCircle icon for placeholder
+import { UserCircle } from "lucide-react";
+import jsPDF from "jspdf";
 
 interface UserProfile {
   name_full: string;
@@ -38,18 +39,17 @@ interface UserProfile {
   telephone_res: string;
   telephone_office: string;
   mobile: string;
-  email: string; // This should be pre-filled from login data
+  email: string;
   date_of_birth: string;
   blood_group: string;
   marital_status: "married" | "single" | "";
   wedding_anniversary_date: string;
-  references: string[]; // Two references
-  // Medical Declaration
+  references: string[];
   physician_name: string;
   physician_contact: string;
   physician_mobile: string;
   physician_tel: string;
-  medications: string; // "Are you taking any medications?"
+  medications: string;
   participating_in_exercise_program_reason: string;
   describe_physical_activity: string;
   do_you_have_condition: {
@@ -69,10 +69,9 @@ interface UserProfile {
     muscle_joint_or_back_disorder: boolean;
     diabetes_or_thyroid_condition: boolean;
     any_other_condition_or_medication_that_may_be_aggravated_by_lifting_weights: boolean;
-    any_other_specific_peculiar_detail: string; // "Please explain any 'Yes'"
+    any_other_specific_peculiar_detail: string;
   };
-  comments: string; // Comments field in medical section
-  // Informed Consent
+  comments: string;
   informed_consent_agreed: boolean;
   rules_regulations_agreed: boolean;
 }
@@ -81,8 +80,9 @@ export default function ProfileCompletion() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for the hidden file input
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // State to store image preview URL
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [profileExists, setProfileExists] = useState<boolean>(false);
 
   const [profile, setProfile] = useState<UserProfile>({
     name_full: "",
@@ -100,7 +100,7 @@ export default function ProfileCompletion() {
     telephone_res: "",
     telephone_office: "",
     mobile: "",
-    email: localStorage.getItem("email") || "", // Pre-fill email from localStorage
+    email: localStorage.getItem("email") || "",
     date_of_birth: "",
     blood_group: "",
     marital_status: "",
@@ -137,12 +137,10 @@ export default function ProfileCompletion() {
     rules_regulations_agreed: false,
   });
 
-  // Function to calculate a basic profile completion percentage
   const calculateCompletionPercentage = (currentProfile: UserProfile): number => {
     let completedFields = 0;
     let totalFields = 0;
 
-    // Section A: Details of Applicant (simplified for demonstration)
     if (currentProfile.name_full.trim() !== "") completedFields++;
     totalFields++;
     if (currentProfile.surname.trim() !== "") completedFields++;
@@ -153,16 +151,14 @@ export default function ProfileCompletion() {
     totalFields++;
     if (currentProfile.date_of_birth.trim() !== "") completedFields++;
     totalFields++;
-    if (currentProfile.email.trim() !== "") completedFields++; // Email is pre-filled, but counts as a field
+    if (currentProfile.email.trim() !== "") completedFields++;
     totalFields++;
 
-    // Add a few address fields if they are considered essential for completion
     if (currentProfile.residential_address.street.trim() !== "") completedFields++;
     totalFields++;
     if (currentProfile.residential_address.pin_code.trim() !== "") completedFields++;
     totalFields++;
 
-    // Section B: Medical Declaration (simplified)
     if (currentProfile.physician_name.trim() !== "") completedFields++;
     totalFields++;
     if (currentProfile.medications.trim() !== "") completedFields++;
@@ -170,19 +166,14 @@ export default function ProfileCompletion() {
     if (currentProfile.describe_physical_activity.trim() !== "") completedFields++;
     totalFields++;
 
-    // Section C: Informed Consent
     if (currentProfile.informed_consent_agreed) completedFields++;
     totalFields++;
     if (currentProfile.rules_regulations_agreed) completedFields++;
     totalFields++;
 
-    // You can add more fields from your UserProfile interface here to make the calculation more comprehensive.
-    // For example, iterate through all boolean flags in do_you_have_condition, etc.
-
     return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
   };
 
-  // Fetch existing profile data if available
   useEffect(() => {
     const fetchProfile = async () => {
     const token = localStorage.getItem("token");
@@ -199,7 +190,6 @@ export default function ProfileCompletion() {
     }
 
     try {
-      // 1. Get basic user data
       const resUser = await fetch(`http://localhost:8000/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -209,9 +199,7 @@ export default function ProfileCompletion() {
 
       if (!resUser.ok) throw new Error("User fetch failed");
       const userData = await resUser.json();
-      
 
-      // 2. Get extended member data
       const resMember = await fetch(`http://localhost:8000/users/member/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -222,75 +210,68 @@ export default function ProfileCompletion() {
       let memberData = {};
       if (resMember.status === 200) {
         memberData = await resMember.json();
+        setProfileExists(true); // Profile exists, so we'll be updating
       } else if (resMember.status === 404) {
-        // No profile yet — keep form empty
-        console.log("No member profile found. User can now fill it.");
+        setProfileExists(false); // Profile doesn't exist, we'll be creating
       } else {
         throw new Error("Unexpected error while fetching member profile.");
       }
 
-
-      // 3. Set the profile state from backend response
-      setProfile(prev => ({
-        ...prev,
-        name_full: memberData.name_full || "",
-        surname: memberData.surname || "",
-        first_name: memberData.first_name || "",
-        fathers_name: memberData.fathers_name || "",
-        residential_address: {
-          flat_no: memberData.res_flat_no || "",
-          wing: memberData.res_wing || "",
-          floor: memberData.res_floor || "",
-          bldg_name: memberData.res_bldg_name || "",
-          street: memberData.res_street || "",
-          landmark: memberData.res_landmark || "",
-          area: memberData.res_area || "",
-          pin_code: memberData.res_pin_code || "",
-        },
-        office_address: {
-          office_no: memberData.off_office_no || "",
-          wing: memberData.off_wing || "",
-          floor: memberData.off_floor || "",
-          bldg_name: memberData.off_bldg_name || "",
-          street: memberData.off_street || "",
-          landmark: memberData.off_landmark || "",
-          area: memberData.off_area || "",
-          pin_code: memberData.off_pin_code || "",
-        },
-        telephone_res: memberData.telephone_res || "",
-        telephone_office: memberData.telephone_office || "",
-        mobile: memberData.mobile || userData.phone || "",
-        email: memberData.email || userData.email || "",
-        date_of_birth: memberData.date_of_birth || "",
-        blood_group: memberData.blood_group || "",
-        marital_status: memberData.marital_status || "",
-        wedding_anniversary_date: memberData.wedding_anniversary_date || "",
-        references: [memberData.reference1 || "", memberData.reference2 || ""],
-        physician_name: memberData.physician_name || "",
-        physician_contact: memberData.physician_contact || "",
-        physician_mobile: memberData.physician_mobile || "",
-        physician_tel: memberData.physician_tel || "",
-        medications: memberData.medications || "",
-        participating_in_exercise_program_reason: memberData.participating_in_exercise_program_reason || "",
-        describe_physical_activity: memberData.describe_physical_activity || "",
-        do_you_have_condition: {
-          ...prev.do_you_have_condition,
-          any_other_specific_peculiar_detail: memberData.any_other_condition_detail || "",
-        },
-        comments: memberData.comments || "",
-        informed_consent_agreed: memberData.informed_consent_agreed || false,
-        rules_regulations_agreed: memberData.rules_regulations_agreed || false,
-      }));
-
-      // 4. Calculate and save percentage
-      const percent = calculateCompletionPercentage({
-        ...profile,
-        name_full: memberData.name_full || "",
-        email: userData.email || "",
-        mobile: userData.phone || "",
-        // You can pass other fields too
+      setProfile(prev => {
+        const newProfile = {
+          ...prev,
+          name_full: memberData.name_full || "",
+          surname: memberData.surname || "",
+          first_name: memberData.first_name || "",
+          fathers_name: memberData.fathers_name || "",
+          residential_address: {
+            flat_no: memberData.res_flat_no || "",
+            wing: memberData.res_wing || "",
+            floor: memberData.res_floor || "",
+            bldg_name: memberData.res_bldg_name || "",
+            street: memberData.res_street || "",
+            landmark: memberData.res_landmark || "",
+            area: memberData.res_area || "",
+            pin_code: memberData.res_pin_code || "",
+          },
+          office_address: {
+            office_no: memberData.off_office_no || "",
+            wing: memberData.off_wing || "",
+            floor: memberData.off_floor || "",
+            bldg_name: memberData.off_bldg_name || "",
+            street: memberData.off_street || "",
+            landmark: memberData.off_landmark || "",
+            area: memberData.off_area || "",
+            pin_code: memberData.off_pin_code || "",
+          },
+          telephone_res: memberData.telephone_res || "",
+          telephone_office: memberData.telephone_office || "",
+          mobile: memberData.mobile || userData.phone || "",
+          email: memberData.email || userData.email || "",
+          date_of_birth: memberData.date_of_birth || "",
+          blood_group: memberData.blood_group || "",
+          marital_status: memberData.marital_status || "",
+          wedding_anniversary_date: memberData.wedding_anniversary_date || "",
+          references: [memberData.reference1 || "", memberData.reference2 || ""],
+          physician_name: memberData.physician_name || "",
+          physician_contact: memberData.physician_contact || "",
+          physician_mobile: memberData.physician_mobile || "",
+          physician_tel: memberData.physician_tel || "",
+          medications: memberData.medications || "",
+          participating_in_exercise_program_reason: memberData.participating_in_exercise_program_reason || "",
+          describe_physical_activity: memberData.describe_physical_activity || "",
+          do_you_have_condition: {
+            ...prev.do_you_have_condition,
+            any_other_specific_peculiar_detail: memberData.any_other_condition_detail || "",
+          },
+          comments: memberData.comments || "",
+          informed_consent_agreed: memberData.informed_consent_agreed === "true" || false,
+          rules_regulations_agreed: memberData.rules_regulations_agreed === "true" || false,
+        };
+        const percent = calculateCompletionPercentage(newProfile);
+        localStorage.setItem("profile_completion_percentage", percent.toString());
+        return newProfile;
       });
-      localStorage.setItem("profile_completion_percentage", percent.toString());
 
       toast({
         title: "Profile Loaded",
@@ -345,9 +326,9 @@ export default function ProfileCompletion() {
         updatedProfile = { ...updatedProfile, [name]: value };
       }
 
-      // Recalculate and update percentage in localStorage immediately on change
       const percentage = calculateCompletionPercentage(updatedProfile);
       localStorage.setItem("profile_completion_percentage", percentage.toString());
+      window.dispatchEvent(new Event("storage")); // Manually dispatch storage event
 
       return updatedProfile;
     });
@@ -356,9 +337,9 @@ export default function ProfileCompletion() {
   const handleRadioChange = (name: keyof UserProfile, value: string) => {
     setProfile(prev => {
       const updatedProfile = { ...prev, [name]: value };
-      // Recalculate and update percentage in localStorage immediately on change
       const percentage = calculateCompletionPercentage(updatedProfile);
       localStorage.setItem("profile_completion_percentage", percentage.toString());
+      window.dispatchEvent(new Event("storage")); // Manually dispatch storage event
       return updatedProfile;
     });
   };
@@ -402,91 +383,83 @@ export default function ProfileCompletion() {
         }),
       });
 
-      if (res.ok) {
-        // Save full profile to members table
-        const memberRes = await fetch("http://localhost:8000/users/profile-complete", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_id: parseInt(userId),
-            name_full: profile.name_full,
-            surname: profile.surname,
-            first_name: profile.first_name,
-            fathers_name: profile.fathers_name,
-            res_flat_no: profile.residential_address.flat_no,
-            res_wing: profile.residential_address.wing,
-            res_floor: profile.residential_address.floor,
-            res_bldg_name: profile.residential_address.bldg_name,
-            res_street: profile.residential_address.street,
-            res_landmark: profile.residential_address.landmark,
-            res_area: profile.residential_address.area,
-            res_pin_code: profile.residential_address.pin_code,
-            off_office_no: profile.office_address.office_no,
-            off_wing: profile.office_address.wing,
-            off_floor: profile.office_address.floor,
-            off_bldg_name: profile.office_address.bldg_name,
-            off_street: profile.office_address.street,
-            off_landmark: profile.office_address.landmark,
-            off_area: profile.office_address.area,
-            off_pin_code: profile.office_address.pin_code,
-            telephone_res: profile.telephone_res,
-            telephone_office: profile.telephone_office,
-            mobile: profile.mobile,
-            email: profile.email,
-            date_of_birth: profile.date_of_birth,
-            blood_group: profile.blood_group,
-            marital_status: profile.marital_status,
-            wedding_anniversary_date: profile.wedding_anniversary_date,
-            reference1: profile.references[0],
-            reference2: profile.references[1],
-            physician_name: profile.physician_name,
-            physician_contact: profile.physician_contact,
-            physician_mobile: profile.physician_mobile,
-            physician_tel: profile.physician_tel,
-            medications: profile.medications,
-            participating_in_exercise_program_reason: profile.participating_in_exercise_program_reason,
-            describe_physical_activity: profile.describe_physical_activity,
-            any_other_condition_detail: profile.do_you_have_condition.any_other_specific_peculiar_detail,
-            comments: profile.comments,
-            informed_consent_agreed: profile.informed_consent_agreed,
-            rules_regulations_agreed: profile.rules_regulations_agreed,
-          }),
-        });
-
-        if (!memberRes.ok) {
-          const memberError = await memberRes.json();
-          toast({
-            title: "Member Profile Save Failed",
-            description: memberError.detail || "Could not save detailed profile.",
-            variant: "destructive",
-          });
-        }
-
-        const percentage = calculateCompletionPercentage(profile);
-        localStorage.setItem("profile_completion_percentage", percentage.toString());
-
-        toast({
-          title: "Profile Saved",
-          description: "Your profile has been successfully updated!",
-          variant: "success",
-        });
-        navigate("/dashboard");
-      } else {
+      if (!res.ok) {
         const errorData = await res.json();
-        toast({
-          title: "Save Failed",
-          description: errorData.detail || "Failed to save profile. Please try again.",
-          variant: "destructive",
-        });
+        throw new Error(errorData.detail || "Failed to update user's basic info.");
       }
-    } catch (error) {
+
+      const memberRes = await fetch("http://localhost:8000/users/profile-complete", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: parseInt(userId),
+          name_full: profile.name_full,
+          surname: profile.surname,
+          first_name: profile.first_name,
+          fathers_name: profile.fathers_name,
+          res_flat_no: profile.residential_address.flat_no,
+          res_wing: profile.residential_address.wing,
+          res_floor: profile.residential_address.floor,
+          res_bldg_name: profile.residential_address.bldg_name,
+          res_street: profile.residential_address.street,
+          res_landmark: profile.residential_address.landmark,
+          res_area: profile.residential_address.area,
+          res_pin_code: profile.residential_address.pin_code,
+          off_office_no: profile.office_address.office_no,
+          off_wing: profile.office_address.wing,
+          off_floor: profile.office_address.floor,
+          off_bldg_name: profile.office_address.bldg_name,
+          off_street: profile.office_address.street,
+          off_landmark: profile.office_address.landmark,
+          off_area: profile.office_address.area,
+          off_pin_code: profile.office_address.pin_code,
+          telephone_res: profile.telephone_res,
+          telephone_office: profile.telephone_office,
+          mobile: profile.mobile,
+          email: profile.email,
+          date_of_birth: profile.date_of_birth,
+          blood_group: profile.blood_group,
+          marital_status: profile.marital_status,
+          wedding_anniversary_date: profile.wedding_anniversary_date,
+          reference1: profile.references[0],
+          reference2: profile.references[1],
+          physician_name: profile.physician_name,
+          physician_contact: profile.physician_contact,
+          physician_mobile: profile.physician_mobile,
+          physician_tel: profile.physician_tel,
+          medications: profile.medications,
+          participating_in_exercise_program_reason: profile.participating_in_exercise_program_reason,
+          describe_physical_activity: profile.describe_physical_activity,
+          any_other_condition_detail: profile.do_you_have_condition.any_other_specific_peculiar_detail,
+          comments: profile.comments,
+          informed_consent_agreed: profile.informed_consent_agreed,
+          rules_regulations_agreed: profile.rules_regulations_agreed,
+        }),
+      });
+
+      if (!memberRes.ok) {
+        const memberError = await memberRes.json();
+        throw new Error(memberError.detail || "Could not save detailed profile.");
+      }
+
+      const percentage = calculateCompletionPercentage(profile);
+      localStorage.setItem("profile_completion_percentage", percentage.toString());
+      window.dispatchEvent(new Event("storage")); // Manually dispatch storage event for Sidebar
+
+      toast({
+        title: "Profile Saved",
+        description: "Your profile has been successfully updated!",
+        variant: "success",
+      });
+      navigate("/dashboard");
+    } catch (error: any) {
       console.error("Error saving profile:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while saving your profile.",
+        description: error.message || "An unexpected error occurred while saving your profile.",
         variant: "destructive",
       });
     }
@@ -581,30 +554,119 @@ export default function ProfileCompletion() {
     }
   };
 
-  // Function to handle image file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target && typeof e.target.result === 'string') {
-          setSelectedImage(e.target.result); // Set the image preview URL
+          setSelectedImage(e.target.result);
         }
       };
-      reader.readAsDataURL(file); // Read file as data URL for preview
+      reader.readAsDataURL(file);
     }
   };
 
-  // Function to trigger the hidden file input click
   const handleUploadButtonClick = () => {
     fileInputRef.current?.click();
   };
 
+  const handleExportPdf = () => {
+  const doc = new jsPDF();
+  let y = 10;
+  const lineHeight = 7;
+  const margin = 10;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("SmartFlex Fitness - Profile Summary", margin, y);
+  y += 10;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Date of Export: ${new Date().toLocaleDateString()}`, margin, y);
+  y += 10;
+
+  // Section A: Basic Info
+  doc.setFont("helvetica", "bold");
+  doc.text("Section A: Personal Info", margin, y);
+  y += lineHeight;
+
+  doc.setFont("helvetica", "normal");
+  doc.text(`Name: ${profile.name_full}`, margin, y);
+  y += lineHeight;
+  doc.text(`Mobile: ${profile.mobile}`, margin, y);
+  doc.text(`Email: ${profile.email}`, 100, y);
+  y += lineHeight;
+  doc.text(`DOB: ${profile.date_of_birth}`, margin, y);
+  doc.text(`Blood Group: ${profile.blood_group}`, 100, y);
+  y += lineHeight;
+  doc.text(`Marital Status: ${profile.marital_status}`, margin, y);
+  y += lineHeight;
+
+  const resAddr = profile.residential_address;
+  doc.text(`Address: ${resAddr.flat_no}, ${resAddr.street}, ${resAddr.area}, ${resAddr.pin_code}`, margin, y);
+  y += lineHeight;
+
+  // Section B: Medical Declaration
+  y += 4;
+  doc.setFont("helvetica", "bold");
+  doc.text("Section B: Medical Declaration", margin, y);
+  y += lineHeight;
+
+  doc.setFont("helvetica", "normal");
+  doc.text(`Physician: ${profile.physician_name} (${profile.physician_contact})`, margin, y);
+  y += lineHeight;
+  doc.text(`Medications: ${profile.medications || "None"}`, margin, y);
+  y += lineHeight;
+  doc.text(`Reason: ${profile.participating_in_exercise_program_reason}`, margin, y);
+  y += lineHeight;
+  doc.text(`Physical Activity: ${profile.describe_physical_activity}`, margin, y);
+  y += lineHeight;
+
+  // Health conditions summary
+  const conditions = profile.do_you_have_condition;
+  const positiveConditions = Object.keys(conditions)
+    .filter(key => conditions[key as keyof typeof conditions] === true)
+    .filter(key => key !== "any_other_specific_peculiar_detail")
+    .map(key =>
+      key
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, char => char.toUpperCase())
+    );
+
+  const conditionSummary = positiveConditions.length > 0 ? positiveConditions.join(", ") : "None reported";
+  y += 2;
+  doc.text(`Known Conditions: ${conditionSummary}`, margin, y);
+  y += lineHeight;
+
+  // Section C: Consent
+  y += 4;
+  doc.setFont("helvetica", "bold");
+  doc.text("Section C: Consent", margin, y);
+  y += lineHeight;
+
+  doc.setFont("helvetica", "normal");
+  doc.text(`Informed Consent: ${profile.informed_consent_agreed ? "Yes" : "No"}`, margin, y);
+  y += lineHeight;
+  doc.text(`Rules & Regulations: ${profile.rules_regulations_agreed ? "Yes" : "No"}`, margin, y);
+  y += 15;
+
+  // Signature
+  doc.setFont("helvetica", "bold");
+  doc.text("Signature:", margin, y);
+  doc.line(margin + 25, y, margin + 90, y);
+  y += lineHeight + 2;
+  doc.text("Date:", margin, y);
+  doc.line(margin + 25, y, margin + 60, y);
+
+  doc.save("SmartFlex_Profile_Summary.pdf");
+};
+
+
   return (
     <div className="p-6 space-y-8 max-w-4xl mx-auto font-poppins">
       <h1 className="text-4xl font-extrabold text-center text-primary mb-8">Complete Your Profile</h1>
-
-      {/* Profile Photo Section */}
       <Card className="shadow-lg text-center">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-primary">Profile Photo</CardTitle>
@@ -623,7 +685,7 @@ export default function ProfileCompletion() {
             ref={fileInputRef}
             onChange={handleFileChange}
             accept="image/*"
-            className="hidden" // Hide the actual file input
+            className="hidden"
           />
           <Button variant="outline" className="w-full max-w-xs" onClick={handleUploadButtonClick}>
             Upload Photo
@@ -633,7 +695,6 @@ export default function ProfileCompletion() {
       </Card>
 
       <form onSubmit={handleSaveProfile} className="space-y-8">
-        {/* Section A: Details of Applicant */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl font-semibold text-primary">Section A: Details of Applicant</CardTitle>
@@ -748,7 +809,6 @@ export default function ProfileCompletion() {
           </CardContent>
         </Card>
 
-        {/* Section B: Medical Declaration */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl font-semibold text-primary">Section B: Medical Declaration</CardTitle>
@@ -781,10 +841,9 @@ export default function ProfileCompletion() {
             <h3 className="text-lg font-semibold mt-4">Do you now, or have you had in the past:</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {Object.keys(profile.do_you_have_condition).map((key) => {
-                // Skip 'any_other_specific_peculiar_detail' as it's a textarea
                 if (key === "any_other_specific_peculiar_detail") return null;
 
-                const labelText = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()); // Convert snake_case to Title Case
+                const labelText = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
                 return (
                   <div key={key} className="flex items-center space-x-2">
                     <Checkbox
@@ -809,7 +868,6 @@ export default function ProfileCompletion() {
           </CardContent>
         </Card>
 
-        {/* Section C: Informed Consent */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl font-semibold text-primary">Section C: Informed Consent</CardTitle>
@@ -824,13 +882,13 @@ export default function ProfileCompletion() {
                 onCheckedChange={(checked) => handleChange({ target: { name: "informed_consent_agreed", type: "checkbox", checked } } as React.ChangeEvent<HTMLInputElement>)}
                 required
               />
-              <Label htmlFor="informed_consent_agreed" className="flex-1 text-base"> {/* Increased text size for better readability */}
+              <Label htmlFor="informed_consent_agreed" className="flex-1 text-base">
                 I have read and understood the{" "}
                 <Button
                   variant="link"
                   type="button"
                   onClick={openInformedConsent}
-                  className="p-0 h-auto text-primary underline-offset-4 hover:underline" // Added underline on hover
+                  className="p-0 h-auto text-primary underline-offset-4 hover:underline"
                 >
                   Informed Consent
                 </Button>
@@ -845,13 +903,13 @@ export default function ProfileCompletion() {
                 onCheckedChange={(checked) => handleChange({ target: { name: "rules_regulations_agreed", type: "checkbox", checked } } as React.ChangeEvent<HTMLInputElement>)}
                 required
               />
-              <Label htmlFor="rules_regulations_agreed" className="flex-1 text-base"> {/* Increased text size for better readability */}
+              <Label htmlFor="rules_regulations_agreed" className="flex-1 text-base">
                 I have read and understood the{" "}
                 <Button
                   variant="link"
                   type="button"
                   onClick={openRulesAndRegulations}
-                  className="p-0 h-auto text-primary underline-offset-4 hover:underline" // Added underline on hover
+                  className="p-0 h-auto text-primary underline-offset-4 hover:underline"
                 >
                   Membership Rules & Regulations
                 </Button>
@@ -861,7 +919,12 @@ export default function ProfileCompletion() {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full py-3 text-lg">Save Profile</Button>
+        <div className="flex gap-4">
+          <Button type="submit" className="flex-1 py-3 text-lg">Save Profile</Button>
+          <Button type="button" onClick={handleExportPdf} className="flex-1 py-3 text-lg" variant="outline">
+            Export as PDF
+          </Button>
+        </div>
       </form>
     </div>
   );

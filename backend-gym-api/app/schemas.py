@@ -128,53 +128,53 @@ class SessionAttendanceResponse(BaseModel):
 class MemberCreate(BaseModel):
     user_id: int
 
-    name_full: str
-    surname: str
-    first_name: str
-    fathers_name: str
+    name_full: Optional[str] = None
+    surname: Optional[str] = None
+    first_name: Optional[str] = None
+    fathers_name: Optional[str] = None
 
-    res_flat_no: str
-    res_wing: str
-    res_floor: str
-    res_bldg_name: str
-    res_street: str
-    res_landmark: str
-    res_area: str
-    res_pin_code: str
+    res_flat_no: Optional[str] = None
+    res_wing: Optional[str] = None
+    res_floor: Optional[str] = None
+    res_bldg_name: Optional[str] = None
+    res_street: Optional[str] = None
+    res_landmark: Optional[str] = None
+    res_area: Optional[str] = None
+    res_pin_code: Optional[str] = None
 
-    off_office_no: str
-    off_wing: str
-    off_floor: str
-    off_bldg_name: str
-    off_street: str
-    off_landmark: str
-    off_area: str
-    off_pin_code: str
+    off_office_no: Optional[str] = None
+    off_wing: Optional[str] = None
+    off_floor: Optional[str] = None
+    off_bldg_name: Optional[str] = None
+    off_street: Optional[str] = None
+    off_landmark: Optional[str] = None
+    off_area: Optional[str] = None
+    off_pin_code: Optional[str] = None
 
-    telephone_res: str
-    telephone_office: str
-    mobile: str
-    email: str
-    date_of_birth: str
-    blood_group: str
-    marital_status: str
-    wedding_anniversary_date: str
+    telephone_res: Optional[str] = None
+    telephone_office: Optional[str] = None
+    mobile: Optional[str] = None
+    email: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    blood_group: Optional[str] = None
+    marital_status: Optional[str] = None
+    wedding_anniversary_date: Optional[str] = None
 
-    reference1: str
-    reference2: str
+    reference1: Optional[str] = None
+    reference2: Optional[str] = None
 
-    physician_name: str
-    physician_contact: str
-    physician_mobile: str
-    physician_tel: str
-    medications: str
-    participating_in_exercise_program_reason: str
-    describe_physical_activity: str
-    any_other_condition_detail: str
-    comments: str
+    physician_name: Optional[str] = None
+    physician_contact: Optional[str] = None
+    physician_mobile: Optional[str] = None
+    physician_tel: Optional[str] = None
+    medications: Optional[str] = None
+    participating_in_exercise_program_reason: Optional[str] = None
+    describe_physical_activity: Optional[str] = None
+    any_other_condition_detail: Optional[str] = None
+    comments: Optional[str] = None
 
-    informed_consent_agreed: bool
-    rules_regulations_agreed: bool
+    informed_consent_agreed: bool = False
+    rules_regulations_agreed: bool = False
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None

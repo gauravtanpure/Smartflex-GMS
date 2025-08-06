@@ -13,7 +13,7 @@ class User(Base):
     password = Column(String)
     phone = Column(String)
     role = Column(String, default="member")
-    gender = Column(String)  # ✅ add this if not yet
+    gender = Column(String)
     branch = Column(String, nullable=True)
 
     # Add relationships for diet and exercise plans
@@ -55,8 +55,8 @@ class DietPlan(Base):
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
     assigned_date = Column(Date, default=func.now())
-    expiry_date = Column(Date, nullable=True) # Optional expiry date
-    branch_name = Column(String, nullable=True) # Store branch for filtering
+    expiry_date = Column(Date, nullable=True)
+    branch_name = Column(String, nullable=True)
 
     user = relationship("User", back_populates="diet_plans")
     assigned_by_trainer = relationship("Trainer", back_populates="assigned_diet_plans")
@@ -72,8 +72,8 @@ class ExercisePlan(Base):
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
     assigned_date = Column(Date, default=func.now())
-    expiry_date = Column(Date, nullable=True) # Optional expiry date
-    branch_name = Column(String, nullable=True) # Store branch for filtering
+    expiry_date = Column(Date, nullable=True)
+    branch_name = Column(String, nullable=True)
 
     user = relationship("User", back_populates="exercise_plans")
     assigned_by_trainer = relationship("Trainer", back_populates="assigned_exercise_plans")
@@ -83,12 +83,11 @@ class UserAttendance(Base): # New Model for User Attendance
     __tablename__ = "user_attendance"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id")) # Link to User model
-    date = Column(Date) # Date of attendance
-    status = Column(String) # e.g., "present", "absent", "late"
-    branch = Column(String, nullable=True) # Store branch for easy filtering by trainer
+    user_id = Column(Integer, ForeignKey("users.id"))
+    date = Column(Date)
+    status = Column(String)
+    branch = Column(String, nullable=True)
 
-    # Define relationship to User model
     # user = relationship("User", back_populates="attendance_records")
 
 # New Model for Session Schedules
@@ -101,7 +100,7 @@ class SessionSchedule(Base):
     session_date = Column(Date, nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
-    branch_name = Column(String, nullable=True) # Branch where the session is held
+    branch_name = Column(String, nullable=True)
     max_capacity = Column(Integer, default=0)
     description = Column(String, nullable=True)
 
@@ -117,13 +116,12 @@ class SessionAttendance(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("session_schedules.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    status = Column(String, nullable=False) # e.g., "present", "absent", "late"
-    attendance_date = Column(Date, nullable=False) # Date when attendance was marked for the session
+    status = Column(String, nullable=False)
+    attendance_date = Column(Date, nullable=False)
 
     # Define relationships
     session = relationship("SessionSchedule", back_populates="session_attendances")
-    user = relationship("User") # Link to User model
-
+    user = relationship("User")
 
 # models.py
 class Member(Base):
@@ -182,8 +180,8 @@ class Member(Base):
     comments = Column(String)
 
     # Section C
-    informed_consent_agreed = Column(String)
-    rules_regulations_agreed = Column(String)
+    informed_consent_agreed = Column(Boolean) # Changed to Boolean
+    rules_regulations_agreed = Column(Boolean) # Changed to Boolean
 
 
 class FeeAssignment(Base):
@@ -224,7 +222,7 @@ class MembershipPlan(Base):
     description = Column(String, nullable=True)
     price = Column(Float, nullable=False)
     duration_months = Column(Integer, nullable=False)
-    branch_name = Column(String, nullable=True) # To link with a branch
-    is_approved = Column(Boolean, default=False) # ⬅️ NEW FIELD
+    branch_name = Column(String, nullable=True)
+    is_approved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
