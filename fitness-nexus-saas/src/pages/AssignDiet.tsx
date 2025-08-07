@@ -304,7 +304,7 @@ export default function AssignDiet() {
                     {plan.branch_name || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {plan.assigned_date}
+                    {new Date(plan.assigned_date).toLocaleDateString("en-GB")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {editingPlanId === plan.id ? (
@@ -316,7 +316,7 @@ export default function AssignDiet() {
                         className="w-full p-1 border rounded"
                       />
                     ) : (
-                      plan.expiry_date || 'N/A'
+                      new Date(plan.expiry_date).toLocaleDateString("en-GB") || 'N/A'
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

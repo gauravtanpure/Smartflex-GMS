@@ -331,7 +331,7 @@ export default function TrainerAttendance() {
                   {attendanceRecords.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell className="font-medium">{getUserName(record.user_id)}</TableCell>
-                      <TableCell>{record.date}</TableCell>
+                      <TableCell>{new Date(record.date).toLocaleDateString("en-GB")}</TableCell>
                       <TableCell>{record.status}</TableCell>
                       <TableCell>{record.branch}</TableCell>
                       <TableCell className="text-right">

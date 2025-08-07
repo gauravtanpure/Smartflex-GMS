@@ -38,7 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface SessionSchedule {
   id: number;
   trainer_id: number;
-  session_name: string;
+  session_name: string; // ISO date string
   session_date: string; // ISO date string
   start_time: string; // HH:MM:SS string
   end_time: string; // HH:MM:SS string
@@ -72,10 +72,11 @@ const ManageSessions: React.FC = () => {
   const queryClient = useQueryClient();
   const trainerId = parseInt(localStorage.getItem("user_id") || "0");
   const trainerBranch = localStorage.getItem("branch");
+  const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
 
   const [newSession, setNewSession] = useState({
     session_name: "",
-    session_date: "",
+    session_date: today,
     start_time: "",
     end_time: "",
     max_capacity: 0,
@@ -188,7 +189,7 @@ const ManageSessions: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["trainerSessions"] });
       setNewSession({
         session_name: "",
-        session_date: "",
+        session_date: today,
         start_time: "",
         end_time: "",
         max_capacity: 0,
@@ -420,6 +421,7 @@ const ManageSessions: React.FC = () => {
                 value={newSession.session_date}
                 onChange={(e) => setNewSession({ ...newSession, session_date: e.target.value })}
                 required
+                min={today}
               />
             </div>
             <div>
@@ -575,6 +577,7 @@ const ManageSessions: React.FC = () => {
                   }
                   className="col-span-3"
                   required
+                  min={today}
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -669,8 +672,8 @@ const ManageSessions: React.FC = () => {
       {/* Manage Attendance Dialog */}
       {viewingAttendanceSession && (
         <Dialog open={!!viewingAttendanceSession} onOpenChange={() => setViewingAttendanceSession(null)}>
-          <DialogContent className="sm:max-w-[700px]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[700px] flex flex-col max-h-[90vh]">
+            <DialogHeader className="p-6 pb-2">
               <DialogTitle>Manage Attendance for "{viewingAttendanceSession.session_name}"</DialogTitle>
               <DialogDescription>
                 <p>Date: {format(parseISO(viewingAttendanceSession.session_date), "PPP")}</p>
@@ -678,69 +681,74 @@ const ManageSessions: React.FC = () => {
                 <p>Mark attendance for users in this session on a specific date.</p>
               </DialogDescription>
             </DialogHeader>
-            <div className="flex items-center space-x-2 mb-4">
-              <Label htmlFor="attendance_date_filter">Attendance Date:</Label>
-              <Input
-                id="attendance_date_filter"
-                type="date"
-                value={attendanceDate}
-                onChange={handleAttendanceDateChange}
-                className="w-auto"
-              />
-              <Button onClick={() => refetchSessionAttendance()} disabled={isLoadingSessionAttendance}>
-                {isLoadingSessionAttendance ? "Loading..." : "Refresh Attendance"}
-              </Button>
+            <div className="px-6 py-4 border-b">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="attendance_date_filter">Attendance Date:</Label>
+                <Input
+                  id="attendance_date_filter"
+                  type="date"
+                  value={attendanceDate}
+                  onChange={handleAttendanceDateChange}
+                  className="w-auto"
+                  min={today}
+                />
+                <Button onClick={() => refetchSessionAttendance()} disabled={isLoadingSessionAttendance}>
+                  {isLoadingSessionAttendance ? "Loading..." : "Refresh"}
+                </Button>
+              </div>
             </div>
-            {isLoadingUsers || isLoadingSessionAttendance ? (
-              <p>Loading users and attendance data...</p>
-            ) : usersInBranch.length === 0 ? (
-              <p className="text-center text-muted-foreground">No users found in your branch.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {usersInBranch.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={attendanceStatus[user.id] || "absent"}
-                          onValueChange={(value) => handleMarkAttendance(user.id, value)}
-                          disabled={manageAttendanceMutation.isPending}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="present">Present</SelectItem>
-                            <SelectItem value="absent">Absent</SelectItem>
-                            <SelectItem value="late">Late</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          onClick={() => handleMarkAttendance(user.id, attendanceStatus[user.id] || "absent")}
-                          disabled={manageAttendanceMutation.isPending}
-                          size="sm"
-                        >
-                          {manageAttendanceMutation.isPending ? "Saving..." : "Save"}
-                        </Button>
-                      </TableCell>
+            <div className="flex-grow overflow-y-auto p-6">
+              {isLoadingUsers || isLoadingSessionAttendance ? (
+                <p>Loading users and attendance data...</p>
+              ) : usersInBranch.length === 0 ? (
+                <p className="text-center text-muted-foreground">No users found in your branch.</p>
+              ) : (
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white z-10">
+                    <TableRow>
+                      <TableHead>User Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-            <DialogFooter>
+                  </TableHeader>
+                  <TableBody>
+                    {usersInBranch.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={attendanceStatus[user.id] || "absent"}
+                            onValueChange={(value) => handleMarkAttendance(user.id, value)}
+                            disabled={manageAttendanceMutation.isPending}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Select Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="present">Present</SelectItem>
+                              <SelectItem value="absent">Absent</SelectItem>
+                              <SelectItem value="late">Late</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            onClick={() => handleMarkAttendance(user.id, attendanceStatus[user.id] || "absent")}
+                            disabled={manageAttendanceMutation.isPending}
+                            size="sm"
+                          >
+                            {manageAttendanceMutation.isPending ? "Saving..." : "Save"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            <DialogFooter className="p-6 pt-2">
               <Button variant="outline" onClick={() => setViewingAttendanceSession(null)}>
                 Close
               </Button>

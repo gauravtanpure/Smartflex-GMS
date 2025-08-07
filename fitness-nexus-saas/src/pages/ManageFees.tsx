@@ -173,7 +173,7 @@ export default function ManageFees() {
   };
 
   return (
-    <div className="p-6" font-poppins>
+    <div className="p-2" font-poppins>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-3xl font-bold" style={{ color: "#6b7e86" }}>Manage Fees</h2>
         <button
@@ -282,7 +282,10 @@ export default function ManageFees() {
                         <td className="px-4 py-2 border-b text-center">{userDisplay}</td>
                         <td className="px-4 py-2 border-b text-center">{fee.fee_type}</td>
                         <td className="px-4 py-2 border-b text-center">₹{fee.amount.toFixed(2)}</td>
-                        <td className="px-4 py-2 border-b text-center">{fee.due_date}</td>
+                        <td className="px-4 py-2 border-b text-center">
+                          {new Date(fee.due_date).toLocaleDateString("en-GB")}
+                        </td>
+
                         <td className="px-4 py-2 border-b text-center">{fee.branch_name || "N/A"}</td>
                         <td className="px-4 py-2 border-b text-center">
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${

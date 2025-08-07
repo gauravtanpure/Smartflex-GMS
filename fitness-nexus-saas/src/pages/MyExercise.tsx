@@ -72,8 +72,8 @@ export default function MyExercise() {
                 />
               </div>
               <div className="text-xs text-gray-400 mt-4 pt-4 border-t border-gray-100">
-                <p className="mb-1"><strong>Assigned Date:</strong> {plan.assigned_date}</p>
-                {plan.expiry_date && <p className="mb-1"><strong>Expiry Date:</strong> {plan.expiry_date}</p>}
+                <p className="mb-1"><strong>Assigned Date:</strong> {new Date(plan.assigned_date).toLocaleDateString("en-GB")}</p>
+                {plan.expiry_date && <p className="mb-1"><strong>Expiry Date:</strong> {new Date(plan.expiry_date).toLocaleDateString("en-GB")}</p>}
                 <p><strong>Branch:</strong> {plan.branch_name || 'N/A'}</p>
               </div>
             </div>
