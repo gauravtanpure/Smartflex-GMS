@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, datetime
 from .. import models, schemas, database, utils
+from app.schemas import BulkAttendanceEntry
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -389,3 +390,42 @@ def get_member_profile(user_id: int, db: Session = Depends(database.get_db)):
     if not member:
         raise HTTPException(status_code=404, detail="Member profile not found")
     return member
+
+@router.post("/bulk-attendance", status_code=201)
+def bulk_attendance(
+    entries: List[BulkAttendanceEntry],
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer),
+):
+    branch = current_trainer.branch
+    if not branch:
+        raise HTTPException(status_code=400, detail="Trainer's branch not specified.")
+
+    for entry in entries:
+        user = db.query(models.User).filter(
+            models.User.id == entry.user_id,
+            models.User.branch == branch
+        ).first()
+
+        if not user:
+            continue  # Skip invalid users
+
+        already_marked = db.query(models.UserAttendance).filter(
+            models.UserAttendance.user_id == entry.user_id,
+            models.UserAttendance.date == entry.date,
+            models.UserAttendance.branch == branch
+        ).first()
+
+        if already_marked:
+            already_marked.status = entry.status
+        else:
+            new_record = models.UserAttendance(
+                user_id=entry.user_id,
+                date=entry.date,
+                status=entry.status,
+                branch=branch
+            )
+            db.add(new_record)
+
+    db.commit()
+    return {"message": "Attendance submitted successfully"}

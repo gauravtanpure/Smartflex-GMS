@@ -18,6 +18,7 @@ const BranchUserList = () => {
   const [search, setSearch] = useState("");
   const [genderFilter, setGenderFilter] = useState("All");
   const [planFilter, setPlanFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [ageFilter, setAgeFilter] = useState(0);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showFilters, setShowFilters] = useState(false);
@@ -31,14 +32,15 @@ const BranchUserList = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
       .then((res) => {
-        const usersWithDummy = res.data.map((user: EnrolledUser) => ({
+        const usersWithDefaults = res.data.map((user: EnrolledUser) => ({
           ...user,
           gender: user.gender || "Not Specified",
           opted_plan: user.opted_plan || "None",
           age: user.age || 18,
+          status: user.status || "Unknown",
         }));
-        setUsers(usersWithDummy);
-        setFilteredUsers(usersWithDummy);
+        setUsers(usersWithDefaults);
+        setFilteredUsers(usersWithDefaults);
       })
       .catch(console.error);
   }, []);
@@ -60,6 +62,10 @@ const BranchUserList = () => {
       filtered = filtered.filter((u) => u.opted_plan === planFilter);
     }
 
+    if (statusFilter !== "All") {
+      filtered = filtered.filter((u) => u.status === statusFilter);
+    }
+
     if (ageFilter > 0) {
       filtered = filtered.filter((u) => u.age >= ageFilter);
     }
@@ -72,7 +78,7 @@ const BranchUserList = () => {
 
     setFilteredUsers(filtered);
     setCurrentPage(1);
-  }, [search, genderFilter, planFilter, ageFilter, sortOrder, users]);
+  }, [search, genderFilter, planFilter, statusFilter, ageFilter, sortOrder, users]);
 
   const downloadCSV = () => {
     const csvRows = [
@@ -100,6 +106,7 @@ const BranchUserList = () => {
 
   const uniquePlans = [...new Set(users.map((u) => u.opted_plan))];
   const uniqueGenders = [...new Set(users.map((u) => u.gender))];
+  const uniqueStatuses = [...new Set(users.map((u) => u.status))];
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -109,7 +116,6 @@ const BranchUserList = () => {
     <div className="space-y-4">
       {/* Header Section */}
       <div className="flex flex-wrap justify-between items-center gap-4">
-        {/* Search Bar - Left */}
         <input
           type="text"
           placeholder="Search by name"
@@ -118,7 +124,6 @@ const BranchUserList = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* Buttons - Right */}
         <div className="flex gap-2 flex-wrap justify-end">
           <Button
             variant="outline"
@@ -155,6 +160,19 @@ const BranchUserList = () => {
             {uniquePlans.map((p) => (
               <option key={p} value={p}>
                 {p}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="border px-3 py-2 rounded"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="All">All Statuses</option>
+            {uniqueStatuses.map((s) => (
+              <option key={s} value={s}>
+                {s}
               </option>
             ))}
           </select>

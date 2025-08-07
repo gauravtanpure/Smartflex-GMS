@@ -324,3 +324,9 @@ class EnrolledUserInfo(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class BulkAttendanceEntry(BaseModel):
+    user_id: int
+    date: date
+    status: str
