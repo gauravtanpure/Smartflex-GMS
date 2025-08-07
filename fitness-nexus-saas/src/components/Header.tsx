@@ -22,19 +22,19 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      const token = localStorage.getItem("token");
-      try {
-        const res = await axios.get("http://localhost:8000/fees/notifications", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setNotifications(res.data);
-      } catch (err) {
-        console.error("Notification fetch failed");
-      }
-    };
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await axios.get("http://localhost:8000/fees/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(res.data);
+    } catch (err) {
+      console.error("Notification fetch failed");
+    }
+  };
 
+  useEffect(() => {
     fetchNotifications();
   }, []);
 
@@ -59,6 +59,45 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
     }
     setShowDropdown(!showDropdown);
   };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    const token = localStorage.getItem("token");
+    try {
+      // Mark the specific notification as read
+      await axios.put(`http://localhost:8000/fees/notifications/${notification.id}`, { is_read: true }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      // Update the state to reflect the change immediately
+      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+
+      // Navigate based on the notification type
+      switch (notification.notification_type) {
+        case "fee_assignment":
+          navigate("/fees");
+          break;
+        case "diet_plan_assigned":
+          navigate("/trainer/assign-diet"); // ✅ correct route
+          break;
+        case "exercise_plan_assigned":
+          navigate("/trainer/assign-exercise"); // ✅ correct route
+          break;
+        case "diet_plan_assigned_to_user":
+          navigate("/my-diet"); // ✅ correct route
+          break;
+        case "exercise_plan_assigned_to_user":
+          navigate("/my-exercise"); // ✅ correct route
+          break;
+        default:
+          navigate("/dashboard");
+          break;
+      }
+      setShowDropdown(false); // Close the dropdown after navigation
+    } catch (err) {
+      console.error("Failed to handle notification click:", err);
+    }
+  };
+
 
   return (
     <header
@@ -110,11 +149,7 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
                     <li
                       key={n.id}
                       className="text-sm border-b pb-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-                      onClick={() => {
-                        if (n.notification_type === "fee_assignment") {
-                          navigate("/fees");
-                        }
-                      }}
+                      onClick={() => handleNotificationClick(n)}
                     >
                       {n.message}
                     </li>

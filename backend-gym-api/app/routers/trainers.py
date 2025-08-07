@@ -2,12 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import date, time # Import date and time
+from datetime import date, time
 from .. import models, schemas, database, utils
 
 router = APIRouter(prefix="/trainers", tags=["Trainers"])
 
-# Dependency to get current authenticated user/trainer
 def get_current_active_user(
     current_user: schemas.UserResponse = Depends(utils.get_current_user),
 ):
@@ -19,7 +18,6 @@ def get_current_active_user(
         )
     return current_user
 
-# Dependency for trainer role check
 def get_current_trainer(
     current_user: schemas.UserResponse = Depends(get_current_active_user),
 ):
@@ -30,7 +28,6 @@ def get_current_trainer(
         )
     return current_user
 
-# NEW DEPENDENCY: Allows access for admin or superadmin
 def get_current_admin_or_superadmin(
     current_user: schemas.UserResponse = Depends(get_current_active_user),
 ):
@@ -40,7 +37,6 @@ def get_current_admin_or_superadmin(
             detail="Not authorized to perform this action. Only admins or superadmins can access this.",
         )
     return current_user
-
 
 # IMPORTANT: Put specific routes BEFORE parameterized routes to avoid conflicts
 
@@ -68,7 +64,7 @@ def create_session(
         session_date=session.session_date,
         start_time=session.start_time,
         end_time=session.end_time,
-        branch_name=current_trainer.branch, # Assign session to trainer's branch
+        branch_name=current_trainer.branch,
         max_capacity=session.max_capacity,
         description=session.description
     )
@@ -90,11 +86,10 @@ def get_trainer_sessions(
     ).all()
     return sessions
 
-# Public endpoint to get all sessions (for members to book)
 @router.get("/public-sessions", response_model=List[schemas.SessionScheduleResponse])
 def get_public_sessions(
     db: Session = Depends(database.get_db),
-    current_user: schemas.UserResponse = Depends(get_current_active_user), # Any authenticated user
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
 ):
     """
     Allows any authenticated user to view all available session schedules.
@@ -105,7 +100,7 @@ def get_public_sessions(
 @router.put("/sessions/{session_id}", response_model=schemas.SessionScheduleResponse)
 def update_session(
     session_id: int,
-    session_update: schemas.SessionScheduleCreate, # Use create schema for update payload
+    session_update: schemas.SessionScheduleCreate,
     db: Session = Depends(database.get_db),
     current_trainer: schemas.UserResponse = Depends(get_current_trainer),
 ):
@@ -167,14 +162,13 @@ def mark_session_attendance(
     session_id: int,
     attendance_data: schemas.SessionAttendanceCreate,
     db: Session = Depends(database.get_db),
-    current_user: schemas.UserResponse = Depends(get_current_active_user), # Changed to allow any authenticated user
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
 ):
     """
     Allows users to book sessions (mark their own attendance) and trainers to mark attendance for users.
     For regular users: they can only mark their own attendance.
     For trainers: they can mark attendance for any user in their branch.
     """
-    # Get the session details
     db_session = db.query(models.SessionSchedule).filter(
         models.SessionSchedule.id == session_id
     ).first()
@@ -185,16 +179,13 @@ def mark_session_attendance(
             detail="Session not found."
         )
 
-    # If current user is a trainer
     if current_user.role == "trainer":
-        # Verify the session belongs to the trainer and user belongs to trainer's branch
         if db_session.trainer_id != current_user.id or db_session.branch_name != current_user.branch:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Session not found, not created by this trainer, or not in trainer's branch."
             )
-        
-        # Verify the user exists and belongs to the trainer's branch
+
         user = db.query(models.User).filter(
             models.User.id == attendance_data.user_id,
             models.User.branch == current_user.branch
@@ -206,14 +197,12 @@ def mark_session_attendance(
                 detail="User not found in trainer's branch or does not exist."
             )
     else:
-        # For regular users, they can only mark their own attendance
         if attendance_data.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only mark your own attendance."
             )
-        
-        # Verify the user exists
+
         user = db.query(models.User).filter(models.User.id == current_user.id).first()
         if not user:
             raise HTTPException(
@@ -221,7 +210,6 @@ def mark_session_attendance(
                 detail="User not found."
             )
 
-    # Check if attendance for this user and session on this date already exists
     existing_attendance = db.query(models.SessionAttendance).filter(
         models.SessionAttendance.session_id == session_id,
         models.SessionAttendance.user_id == attendance_data.user_id,
@@ -229,7 +217,6 @@ def mark_session_attendance(
     ).first()
 
     if existing_attendance:
-        # If attendance exists, update it instead of creating new
         existing_attendance.status = attendance_data.status
         db.commit()
         db.refresh(existing_attendance)
@@ -245,7 +232,6 @@ def mark_session_attendance(
     db.add(new_attendance)
     db.commit()
     db.refresh(new_attendance)
-    # Eagerly load the user relationship for the response
     new_attendance.user = user
     return new_attendance
 
@@ -253,15 +239,14 @@ def mark_session_attendance(
 def get_session_attendance(
     session_id: int,
     db: Session = Depends(database.get_db),
-    current_user: schemas.UserResponse = Depends(get_current_active_user), # Changed to allow any authenticated user
-    user_id: Optional[int] = None, # Added optional user_id for specific lookup
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
+    user_id: Optional[int] = None,
     attendance_date: Optional[date] = None,
 ):
     """
     Allows trainers to view attendance records for their sessions.
     Allows regular users to view their own attendance records for any session.
     """
-    # Get the session details
     db_session = db.query(models.SessionSchedule).filter(
         models.SessionSchedule.id == session_id
     ).first()
@@ -273,35 +258,31 @@ def get_session_attendance(
         )
 
     if current_user.role == "trainer":
-        # Verify the session belongs to the trainer
         if db_session.trainer_id != current_user.id or db_session.branch_name != current_user.branch:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Session not found, not created by this trainer, or not in trainer's branch."
             )
-        
-        # Trainers can see all attendance for their sessions
+
         query = db.query(models.SessionAttendance).filter(
             models.SessionAttendance.session_id == session_id
         ).join(models.User, models.SessionAttendance.user_id == models.User.id)
-        
+
         if user_id:
             query = query.filter(models.SessionAttendance.user_id == user_id)
         if attendance_date:
             query = query.filter(models.SessionAttendance.attendance_date == attendance_date)
     else:
-        # Regular users can only see their own attendance
         query = db.query(models.SessionAttendance).filter(
             models.SessionAttendance.session_id == session_id,
             models.SessionAttendance.user_id == current_user.id
         ).join(models.User, models.SessionAttendance.user_id == models.User.id)
-        
+
         if attendance_date:
             query = query.filter(models.SessionAttendance.attendance_date == attendance_date)
 
     attendance_records = query.all()
 
-    # Manually populate the user field for each attendance record
     for record in attendance_records:
         record.user = db.query(models.User).filter(models.User.id == record.user_id).first()
 
@@ -312,7 +293,7 @@ def update_session_attendance(
     attendance_id: int,
     attendance_data: schemas.SessionAttendanceCreate,
     db: Session = Depends(database.get_db),
-    current_user: schemas.UserResponse = Depends(get_current_active_user), # Changed to allow any authenticated user
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
 ):
     """
     Allows trainers to update attendance records for their sessions.
@@ -329,7 +310,6 @@ def update_session_attendance(
         )
 
     if current_user.role == "trainer":
-        # Verify the session associated with this attendance record belongs to the current trainer
         db_session = db.query(models.SessionSchedule).filter(
             models.SessionSchedule.id == db_attendance.session_id,
             models.SessionSchedule.trainer_id == current_user.id,
@@ -342,7 +322,6 @@ def update_session_attendance(
                 detail="Not authorized to update this attendance record (session not found or not yours)."
             )
 
-        # If user_id is being changed, verify the new user belongs to the trainer's branch
         if attendance_data.user_id != db_attendance.user_id:
             user = db.query(models.User).filter(
                 models.User.id == attendance_data.user_id,
@@ -355,14 +334,12 @@ def update_session_attendance(
                 )
             db_attendance.user_id = attendance_data.user_id
     else:
-        # Regular users can only update their own attendance
         if db_attendance.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only update your own attendance records."
             )
-        
-        # Don't allow regular users to change the user_id
+
         if attendance_data.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -374,7 +351,6 @@ def update_session_attendance(
 
     db.commit()
     db.refresh(db_attendance)
-    # Eagerly load the user relationship for the response
     db_attendance.user = db.query(models.User).filter(models.User.id == db_attendance.user_id).first()
     return db_attendance
 
@@ -382,7 +358,7 @@ def update_session_attendance(
 def delete_session_attendance(
     attendance_id: int,
     db: Session = Depends(database.get_db),
-    current_user: schemas.UserResponse = Depends(get_current_active_user), # Changed to allow any authenticated user
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
 ):
     """
     Allows trainers to delete attendance records for their sessions.
@@ -399,7 +375,6 @@ def delete_session_attendance(
         )
 
     if current_user.role == "trainer":
-        # Verify the session associated with this attendance record belongs to the current trainer
         db_session = db.query(models.SessionSchedule).filter(
             models.SessionSchedule.id == db_attendance.session_id,
             models.SessionSchedule.trainer_id == current_user.id,
@@ -412,7 +387,6 @@ def delete_session_attendance(
                 detail="Not authorized to delete this attendance record (session not found or not yours)."
             )
     else:
-        # Regular users can only delete their own attendance
         if db_attendance.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -453,26 +427,40 @@ def create_diet_plan(
         branch_name=current_trainer.branch
     )
     db.add(new_diet_plan)
+
+    # Create a notification for the trainer who assigned the plan
+    notification_message_trainer = f"You have assigned a new diet plan titled '{new_diet_plan.title}' to {user.name}."
+    notification_trainer = models.UserNotification(
+        user_id=current_trainer.id,
+        message=notification_message_trainer,
+        notification_type="diet_plan_assigned"
+    )
+    db.add(notification_trainer)
+
+    # Create a notification for the user who was assigned the plan
+    notification_message_user = f"You have been assigned a new diet plan titled '{new_diet_plan.title}' by {current_trainer.name}."
+    notification_user = models.UserNotification(
+        user_id=diet_plan.user_id,
+        message=notification_message_user,
+        notification_type="diet_plan_assigned_to_user"
+    )
+    db.add(notification_user)
+
     db.commit()
     db.refresh(new_diet_plan)
 
-    # Manually populate relationships for the response, ensuring specialization is a list
-    # Fetch the full trainer object from the DB to get its specialization string
     trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
     if trainer_data:
-        # Convert specialization string to a list for the response schema
         trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
         trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
     else:
-        # Fallback if trainer_data somehow isn't found (shouldn't happen here)
         trainer_schema = schemas.TrainerResponse(
             id=current_trainer.id,
             name=current_trainer.name,
-            specialization=[], # Default to empty list
+            specialization=[],
             rating=0.0, experience=0, phone="", email="", availability=None, branch_name=current_trainer.branch
         )
-    
-    # Construct the DietPlanResponse
+
     return schemas.DietPlanResponse(
         id=new_diet_plan.id,
         user_id=new_diet_plan.user_id,
@@ -482,14 +470,14 @@ def create_diet_plan(
         assigned_date=new_diet_plan.assigned_date,
         expiry_date=new_diet_plan.expiry_date,
         branch_name=new_diet_plan.branch_name,
-        user=schemas.UserResponse.from_orm(user), # Use the fetched 'user' object
+        user=schemas.UserResponse.from_orm(user),
         assigned_by_trainer=trainer_schema
     )
 
 @router.put("/diet-plans/{plan_id}", response_model=schemas.DietPlanResponse)
 def update_diet_plan(
     plan_id: int,
-    diet_plan_update: schemas.DietPlanCreate, # Re-use create schema for update payload
+    diet_plan_update: schemas.DietPlanCreate,
     db: Session = Depends(database.get_db),
     current_trainer: schemas.UserResponse = Depends(get_current_trainer)
 ):
@@ -509,7 +497,6 @@ def update_diet_plan(
             detail="Diet plan not found or not assigned by this trainer in this branch."
         )
 
-    # Ensure user_id is not changed if it's part of the update payload (or handle carefully)
     if diet_plan_update.user_id != db_diet_plan.user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -523,7 +510,6 @@ def update_diet_plan(
     db.commit()
     db.refresh(db_diet_plan)
 
-    # Manually populate relationships for the response as done in create_diet_plan
     user = db.query(models.User).filter(models.User.id == db_diet_plan.user_id).first()
     trainer_data = db.query(models.Trainer).filter(models.Trainer.id == db_diet_plan.assigned_by_trainer_id).first()
     if trainer_data:
@@ -578,7 +564,7 @@ def delete_diet_plan(
 def get_trainer_diet_plans(
     db: Session = Depends(database.get_db),
     current_trainer: schemas.UserResponse = Depends(get_current_trainer),
-    user_id: Optional[int] = None # Filter by user ID
+    user_id: Optional[int] = None
 ):
     """
     Allows a trainer to view diet plans assigned by them, optionally filtered by user.
@@ -586,17 +572,15 @@ def get_trainer_diet_plans(
     query = db.query(models.DietPlan).filter(
         models.DietPlan.assigned_by_trainer_id == current_trainer.id,
         models.DietPlan.branch_name == current_trainer.branch
-    ).join(models.User, models.DietPlan.user_id == models.User.id) # Eager load user
-    
+    ).join(models.User, models.DietPlan.user_id == models.User.id)
+
     if user_id:
         query = query.filter(models.DietPlan.user_id == user_id)
 
     diet_plans = query.all()
 
-    # Manually populate relationships for the response, ensuring specialization is a list
     result = []
     trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
-    # Ensure trainer_data.specialization is processed before passing to schema
     if trainer_data:
         trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
         trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
@@ -609,7 +593,7 @@ def get_trainer_diet_plans(
         )
 
     for dp in diet_plans:
-        dp_dict = dp.__dict__.copy() # Create a copy to modify
+        dp_dict = dp.__dict__.copy()
         dp_dict['user'] = schemas.UserResponse.from_orm(db.query(models.User).filter(models.User.id == dp.user_id).first())
         dp_dict['assigned_by_trainer'] = trainer_schema
         result.append(schemas.DietPlanResponse(**dp_dict))
@@ -645,10 +629,28 @@ def create_exercise_plan(
         branch_name=current_trainer.branch
     )
     db.add(new_exercise_plan)
+
+    # Create a notification for the trainer who assigned the plan
+    notification_message_trainer = f"You have assigned a new exercise plan titled '{new_exercise_plan.title}' to {user.name}."
+    notification_trainer = models.UserNotification(
+        user_id=current_trainer.id,
+        message=notification_message_trainer,
+        notification_type="exercise_plan_assigned"
+    )
+    db.add(notification_trainer)
+
+    # Create a notification for the user who was assigned the plan
+    notification_message_user = f"You have been assigned a new exercise plan titled '{new_exercise_plan.title}' by {current_trainer.name}."
+    notification_user = models.UserNotification(
+        user_id=exercise_plan.user_id,
+        message=notification_message_user,
+        notification_type="exercise_plan_assigned_to_user"
+    )
+    db.add(notification_user)
+
     db.commit()
     db.refresh(new_exercise_plan)
 
-    # Manually populate relationships for the response, ensuring specialization is a list
     trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
     if trainer_data:
         trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
@@ -661,7 +663,6 @@ def create_exercise_plan(
             rating=0.0, experience=0, phone="", email="", availability=None, branch_name=current_trainer.branch
         )
 
-    # Construct the ExercisePlanResponse
     return schemas.ExercisePlanResponse(
         id=new_exercise_plan.id,
         user_id=new_exercise_plan.user_id,
@@ -678,7 +679,7 @@ def create_exercise_plan(
 @router.put("/exercise-plans/{plan_id}", response_model=schemas.ExercisePlanResponse)
 def update_exercise_plan(
     plan_id: int,
-    exercise_plan_update: schemas.ExercisePlanCreate, # Re-use create schema for update payload
+    exercise_plan_update: schemas.ExercisePlanCreate,
     db: Session = Depends(database.get_db),
     current_trainer: schemas.UserResponse = Depends(get_current_trainer)
 ):
@@ -697,8 +698,7 @@ def update_exercise_plan(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exercise plan not found or not assigned by this trainer in this branch."
         )
-    
-    # Ensure user_id is not changed if it's part of the update payload
+
     if exercise_plan_update.user_id != db_exercise_plan.user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -712,7 +712,6 @@ def update_exercise_plan(
     db.commit()
     db.refresh(db_exercise_plan)
 
-    # Manually populate relationships for the response as done in create_exercise_plan
     user = db.query(models.User).filter(models.User.id == db_exercise_plan.user_id).first()
     trainer_data = db.query(models.Trainer).filter(models.Trainer.id == db_exercise_plan.assigned_by_trainer_id).first()
     if trainer_data:
@@ -767,7 +766,7 @@ def delete_exercise_plan(
 def get_trainer_exercise_plans(
     db: Session = Depends(database.get_db),
     current_trainer: schemas.UserResponse = Depends(get_current_trainer),
-    user_id: Optional[int] = None # Filter by user ID
+    user_id: Optional[int] = None
 ):
     """
     Allows a trainer to view exercise plans assigned by them, optionally filtered by user.
@@ -775,17 +774,15 @@ def get_trainer_exercise_plans(
     query = db.query(models.ExercisePlan).filter(
         models.ExercisePlan.assigned_by_trainer_id == current_trainer.id,
         models.ExercisePlan.branch_name == current_trainer.branch
-    ).join(models.User, models.ExercisePlan.user_id == models.User.id) # Eager load user
-    
+    ).join(models.User, models.ExercisePlan.user_id == models.User.id)
+
     if user_id:
         query = query.filter(models.ExercisePlan.user_id == user_id)
 
     exercise_plans = query.all()
 
-    # Manually populate relationships for the response, ensuring specialization is a list
     result = []
     trainer_data = db.query(models.Trainer).filter(models.Trainer.id == current_trainer.id).first()
-    # Ensure trainer_data.specialization is processed before passing to schema
     if trainer_data:
         trainer_data.specialization = trainer_data.specialization.split(",") if isinstance(trainer_data.specialization, str) and trainer_data.specialization else []
         trainer_schema = schemas.TrainerResponse.from_orm(trainer_data)
@@ -798,7 +795,7 @@ def get_trainer_exercise_plans(
         )
 
     for ep in exercise_plans:
-        ep_dict = ep.__dict__.copy() # Create a copy to modify
+        ep_dict = ep.__dict__.copy()
         ep_dict['user'] = schemas.UserResponse.from_orm(db.query(models.User).filter(models.User.id == ep.user_id).first())
         ep_dict['assigned_by_trainer'] = trainer_schema
         result.append(schemas.ExercisePlanResponse(**ep_dict))
@@ -811,13 +808,13 @@ def get_trainer_exercise_plans(
 def add_trainer(
     trainer: schemas.TrainerCreate,
     db: Session = Depends(database.get_db),
-    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin), # Add this dependency
+    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin),
 ):
     existing_trainer = db.query(models.Trainer).filter(models.Trainer.email == trainer.email).first()
     if existing_trainer:
         raise HTTPException(status_code=400, detail="Trainer with this email already exists.")
 
-    hashed_password = utils.get_password_hash(trainer.password)  # ✅ Hash password before storing
+    hashed_password = utils.get_password_hash(trainer.password)
 
     new_trainer = models.Trainer(
         name=trainer.name,
@@ -826,9 +823,9 @@ def add_trainer(
         experience=trainer.experience,
         phone=trainer.phone,
         email=trainer.email,
-        password=hashed_password,  # ✅ Store hashed password
+        password=hashed_password,
         availability=trainer.availability,
-        branch_name=current_admin.branch if current_admin.role == "admin" else trainer.branch_name, # Assign to admin's branch or allow superadmin to specify
+        branch_name=current_admin.branch if current_admin.role == "admin" else trainer.branch_name,
     )
 
     db.add(new_trainer)
@@ -837,11 +834,10 @@ def add_trainer(
     new_trainer.specialization = trainer.specialization
     return new_trainer
 
-# GET all trainers - this should come before the specific trainer route
 @router.get("/", response_model=list[schemas.TrainerResponse])
 def get_trainers(
     db: Session = Depends(database.get_db),
-    current_user: schemas.UserResponse = Depends(get_current_active_user), # Changed to get_current_active_user
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
 ):
     """
     Allows all authenticated users to view trainers.
@@ -849,7 +845,6 @@ def get_trainers(
     """
     query = db.query(models.Trainer)
 
-    # Apply filtering based on user role
     if current_user.role == "admin":
         if not current_user.branch:
             raise HTTPException(
@@ -858,12 +853,8 @@ def get_trainers(
             )
         query = query.filter(models.Trainer.branch_name == current_user.branch)
     elif current_user.role == "superadmin":
-        # Superadmins see all trainers, no additional filter needed
         pass
     else:
-        # Members and Trainers only see trainers in their own branch if they have one
-        # This assumes non-admin/superadmin users also have a 'branch' attribute
-        # If not, adjust logic to show all or restrict as needed
         if current_user.branch:
             query = query.filter(models.Trainer.branch_name == current_user.branch)
 
@@ -873,7 +864,6 @@ def get_trainers(
         t.specialization = t.specialization.split(",") if isinstance(t.specialization, str) and t.specialization else []
     return trainers
 
-# GET single trainer by ID - MUST come after other specific routes
 @router.get("/{trainer_id}", response_model=schemas.TrainerResponse)
 def get_trainer_by_id(trainer_id: int, db: Session = Depends(database.get_db)):
     """
@@ -897,7 +887,7 @@ def update_trainer(trainer_id: int, trainer: schemas.TrainerCreate, db: Session 
     db_trainer.experience = trainer.experience
     db_trainer.phone = trainer.phone
     db_trainer.email = trainer.email
-    db_trainer.password = utils.get_password_hash(trainer.password)  # ✅ Update password (hashed)
+    db_trainer.password = utils.get_password_hash(trainer.password)
     db_trainer.availability = trainer.availability
     db_trainer.branch_name = trainer.branch_name
 
