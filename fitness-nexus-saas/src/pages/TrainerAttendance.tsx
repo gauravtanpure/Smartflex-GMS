@@ -384,29 +384,26 @@ export default function TrainerAttendance() {
                 </Table>
               </div>
               {/* Pagination Controls */}
-              <div className="flex items-center justify-end space-x-2 py-4">
-                <div className="flex-1 text-sm text-muted-foreground">
-                  Showing {indexOfFirstRecord + 1} to {Math.min(indexOfLastRecord, attendanceRecords.length)} of {attendanceRecords.length} records.
-                </div>
-                <div className="space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={prevPage}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={nextPage}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              {/* Pagination */}
+              <div className="flex justify-center items-center gap-4 pt-4">
+                <Button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => prev - 1)}
+                  variant="outline"
+                >
+                  Prev
+                </Button>
+                <span className="text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  variant="outline"
+                >
+                  Next
+                </Button>
+              </div>            
             </>
           )}
         </CardContent>
