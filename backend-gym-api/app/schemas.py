@@ -49,6 +49,7 @@ class TrainerCreate(BaseModel):
     password: str
     availability: Optional[str] = None
     branch_name: Optional[str] = None
+    revenue_config: Optional[str] = None 
 
 
 class TrainerResponse(BaseModel):
@@ -61,9 +62,15 @@ class TrainerResponse(BaseModel):
     email: EmailStr
     availability: Optional[str]
     branch_name: Optional[str]
+    revenue_config: Optional[str] = None
+    is_approved_by_superadmin: Optional[bool] = False
 
     class Config:
         from_attributes = True # Changed from orm_mode = True
+
+class TrainerRevenueUpdate(BaseModel):
+    revenue_config: str
+
 
 
 # --- New Schemas for User Attendance ---

@@ -32,6 +32,8 @@ interface Trainer {
   password?: string;
   availability?: string;
   branch_name?: string;
+  revenue_config?: string;
+  is_approved_by_superadmin?: boolean;
 }
 
 export default function ManageTrainers() {
@@ -41,10 +43,18 @@ export default function ManageTrainers() {
     { value: "Yoga", label: "Yoga" },
     { value: "Zumba", label: "Zumba" },
   ];
+  const revenueOptions = [ // NEW OPTIONS for revenue configuration
+    { value: "50-50", label: "50% - 50%" },
+    { value: "60-40", label: "60% - 40%" },
+    { value: "Base Salary", label: "Base Salary" },
+  ];
   const { toast } = useToast();
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTrainerId, setEditTrainerId] = useState<number | null>(null);
+  const userRole = localStorage.getItem("role"); // Get user role
+  const isAdminOrSuperAdmin = userRole === "admin" || userRole === "superadmin";
+
   const [newTrainer, setNewTrainer] = useState<Trainer>({
     id: 0,
     name: "",
@@ -56,6 +66,8 @@ export default function ManageTrainers() {
     password: "",
     availability: "",
     branch_name: localStorage.getItem("branch") || "",
+    revenue_config: undefined, // NEW FIELD
+    is_approved_by_superadmin: false, // NEW FIELD
   });
 
   const fetchTrainers = async () => {
@@ -86,7 +98,7 @@ export default function ManageTrainers() {
 
   const handleSaveTrainer = async () => {
     if (!newTrainer.name || !newTrainer.email || !newTrainer.phone || newTrainer.specialization.length === 0 || !newTrainer.password) {
-      toast({ title: "Validation", description: "All fields are required", variant: "destructive" });
+      toast({ title: "Validation", description: "All required fields are required", variant: "destructive" });
       return;
     }
 
@@ -94,13 +106,26 @@ export default function ManageTrainers() {
     const url = editTrainerId ? `http://localhost:8000/trainers/${editTrainerId}` : `http://localhost:8000/trainers/add-trainer`;
     const method = editTrainerId ? "PUT" : "POST";
 
+    // Send all new fields in the request body
+    const trainerData = {
+      ...newTrainer,
+      specialization: newTrainer.specialization,
+      // No need to send password if it's empty during an update
+      ...(editTrainerId && !newTrainer.password ? { password: undefined } : {}),
+    };
+    
+    // Admins cannot change the branch name of an existing trainer
+    if (userRole === "admin" && editTrainerId) {
+      delete trainerData.branch_name;
+    }
+
     const res = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(newTrainer),
+      body: JSON.stringify(trainerData),
     });
 
     if (res.ok) {
@@ -119,6 +144,8 @@ export default function ManageTrainers() {
         password: "",
         availability: "",
         branch_name: localStorage.getItem("branch") || "",
+        revenue_config: undefined, // Reset new field
+        is_approved_by_superadmin: false, // Reset new field
       });
     } else {
       const errorData = await res.json();
@@ -127,7 +154,13 @@ export default function ManageTrainers() {
   };
 
   const handleEdit = (trainer: Trainer) => {
-    setNewTrainer({ ...trainer, password: "" });
+    // Populate new fields when editing
+    setNewTrainer({ 
+      ...trainer, 
+      password: "", 
+      revenue_config: trainer.revenue_config,
+      is_approved_by_superadmin: trainer.is_approved_by_superadmin
+    });
     setEditTrainerId(trainer.id);
     setDialogOpen(true);
   };
@@ -161,11 +194,18 @@ export default function ManageTrainers() {
               <p className="text-sm text-muted-foreground">{trainer.specialization.join(", ")}</p>
             </CardHeader>
             <CardContent className="space-y-1 text-sm text-muted-foreground">
-              <div><Star className="inline w-4 h-4 text-yellow-500 mr-1" />{trainer.rating.toFixed(1)} - {trainer.experience} yrs</div>
+              <div><Star className="inline w-4 h-4 text-yellow-500 mr-1" />{trainer.rating?.toFixed(1)} - {trainer.experience} yrs</div>
               <div><Phone className="inline w-4 h-4 mr-1" />{trainer.phone}</div>
               <div><Mail className="inline w-4 h-4 mr-1" />{trainer.email}</div>
               {trainer.availability && <div><Clock className="inline w-4 h-4 mr-1" />{trainer.availability}</div>}
               {trainer.branch_name && <div>Branch: {trainer.branch_name}</div>}
+              {/* NEW UI: Display revenue config and approval status */}
+              {trainer.revenue_config && <div>Revenue: {trainer.revenue_config}</div>}
+              {userRole === "superadmin" && trainer.revenue_config && (
+                  <div>
+                      Status: {trainer.is_approved_by_superadmin ? <span className="text-green-500">Approved</span> : <span className="text-red-500">Pending Approval</span>}
+                  </div>
+              )}
             </CardContent>
             <div className="absolute top-2 right-2 flex gap-2">
               <Button size="icon" variant="ghost" onClick={() => handleEdit(trainer)}><Pencil className="w-4 h-4" /></Button>
@@ -282,8 +322,26 @@ export default function ManageTrainers() {
                 onChange={(e) => setNewTrainer({ ...newTrainer, availability: e.target.value })}
               />
             </div>
+            
+            {/* NEW UI ELEMENT: Conditionally render the revenue config field */}
+            {isAdminOrSuperAdmin && (
+              <div>
+                <Label htmlFor="revenue_config">Revenue Config</Label>
+                <select
+                  id="revenue_config"
+                  value={newTrainer.revenue_config || ""}
+                  onChange={(e) => setNewTrainer({ ...newTrainer, revenue_config: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Select a configuration</option>
+                  {revenueOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            {localStorage.getItem("role") === "superadmin" && (
+            {userRole === "superadmin" && (
               <div className="sm:col-span-2">
                 <Label htmlFor="branch">Branch Name</Label>
                 <Input
@@ -308,7 +366,6 @@ export default function ManageTrainers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

@@ -38,6 +38,10 @@ class Trainer(Base):
     password = Column(String, nullable=False)
     availability = Column(String, nullable=True)
     branch_name = Column(String, nullable=True)
+    # ⬅️ NEW COLUMN: To store the trainer's revenue configuration (e.g., "50-50")
+    revenue_config = Column(String, nullable=True) 
+    # ⬅️ NEW COLUMN: To track if the revenue configuration is approved by superadmin
+    is_approved_by_superadmin = Column(Boolean, default=False)
 
     sessions = relationship("SessionSchedule", back_populates="trainer")
     # Add relationships for diet and exercise plans assigned by this trainer

@@ -38,9 +38,25 @@ def get_current_admin_or_superadmin(
         )
     return current_user
 
-# IMPORTANT: Put specific routes BEFORE parameterized routes to avoid conflicts
+def get_current_admin(
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to perform this action. Only admins can access this.",
+        )
+    return current_user
 
-# --- Session Management Endpoints (Trainer Role Only) - PUT THESE FIRST ---
+def get_current_superadmin(
+    current_user: schemas.UserResponse = Depends(get_current_active_user),
+):
+    if current_user.role != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to perform this action. Only superadmins can access this.",
+        )
+    return current_user
 
 @router.post("/sessions", response_model=schemas.SessionScheduleResponse)
 def create_session(
@@ -72,6 +88,22 @@ def create_session(
     db.commit()
     db.refresh(new_session)
     return new_session
+
+@router.get("/pending-revenue-approvals", response_model=List[schemas.TrainerResponse])
+def get_pending_revenue_approvals(
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin),
+):
+    pending_trainers = db.query(models.Trainer).filter(models.Trainer.is_approved_by_superadmin == False).all()
+    
+    # ⬅️ UPDATED LOGIC
+    # Construct a list of TrainerResponse objects to ensure all fields are included
+    trainers_with_schema = []
+    for t in pending_trainers:
+        t.specialization = t.specialization.split(",") if isinstance(t.specialization, str) and t.specialization else []
+        trainers_with_schema.append(schemas.TrainerResponse.from_orm(t))
+    
+    return trainers_with_schema
 
 @router.get("/sessions", response_model=List[schemas.SessionScheduleResponse])
 def get_trainer_sessions(
@@ -154,8 +186,6 @@ def delete_session(
     db.delete(db_session)
     db.commit()
     return {"message": "Session deleted successfully"}
-
-# --- Session Attendance Management ---
 
 @router.post("/sessions/{session_id}/attendance", response_model=schemas.SessionAttendanceResponse)
 def mark_session_attendance(
@@ -397,7 +427,6 @@ def delete_session_attendance(
     db.commit()
     return {"message": "Session deleted successfully"}
 
-# --- New Endpoints for Diet Plans (Trainer Only) ---
 @router.post("/diet-plans", response_model=schemas.DietPlanResponse)
 def create_diet_plan(
     diet_plan: schemas.DietPlanCreate,
@@ -428,7 +457,6 @@ def create_diet_plan(
     )
     db.add(new_diet_plan)
 
-    # Create a notification for the trainer who assigned the plan
     notification_message_trainer = f"You have assigned a new diet plan titled '{new_diet_plan.title}' to {user.name}."
     notification_trainer = models.UserNotification(
         user_id=current_trainer.id,
@@ -437,7 +465,6 @@ def create_diet_plan(
     )
     db.add(notification_trainer)
 
-    # Create a notification for the user who was assigned the plan
     notification_message_user = f"You have been assigned a new diet plan titled '{new_diet_plan.title}' by {current_trainer.name}."
     notification_user = models.UserNotification(
         user_id=diet_plan.user_id,
@@ -559,7 +586,6 @@ def delete_diet_plan(
     db.commit()
     return {"message": "Diet plan deleted successfully"}
 
-
 @router.get("/diet-plans", response_model=List[schemas.DietPlanResponse])
 def get_trainer_diet_plans(
     db: Session = Depends(database.get_db),
@@ -599,7 +625,6 @@ def get_trainer_diet_plans(
         result.append(schemas.DietPlanResponse(**dp_dict))
     return result
 
-# --- New Endpoints for Exercise Plans (Trainer Only) ---
 @router.post("/exercise-plans", response_model=schemas.ExercisePlanResponse)
 def create_exercise_plan(
     exercise_plan: schemas.ExercisePlanCreate,
@@ -630,7 +655,6 @@ def create_exercise_plan(
     )
     db.add(new_exercise_plan)
 
-    # Create a notification for the trainer who assigned the plan
     notification_message_trainer = f"You have assigned a new exercise plan titled '{new_exercise_plan.title}' to {user.name}."
     notification_trainer = models.UserNotification(
         user_id=current_trainer.id,
@@ -639,7 +663,6 @@ def create_exercise_plan(
     )
     db.add(notification_trainer)
 
-    # Create a notification for the user who was assigned the plan
     notification_message_user = f"You have been assigned a new exercise plan titled '{new_exercise_plan.title}' by {current_trainer.name}."
     notification_user = models.UserNotification(
         user_id=exercise_plan.user_id,
@@ -761,7 +784,6 @@ def delete_exercise_plan(
     db.commit()
     return {"message": "Exercise plan deleted successfully"}
 
-
 @router.get("/exercise-plans", response_model=List[schemas.ExercisePlanResponse])
 def get_trainer_exercise_plans(
     db: Session = Depends(database.get_db),
@@ -801,9 +823,6 @@ def get_trainer_exercise_plans(
         result.append(schemas.ExercisePlanResponse(**ep_dict))
     return result
 
-
-# --- Trainer CRUD Endpoints (PUT THESE AFTER SESSION ROUTES) ---
-
 @router.post("/add-trainer", response_model=schemas.TrainerResponse)
 def add_trainer(
     trainer: schemas.TrainerCreate,
@@ -815,6 +834,10 @@ def add_trainer(
         raise HTTPException(status_code=400, detail="Trainer with this email already exists.")
 
     hashed_password = utils.get_password_hash(trainer.password)
+    
+    is_approved_by_superadmin = False
+    if current_admin.role == "superadmin" and trainer.revenue_config:
+        is_approved_by_superadmin = True
 
     new_trainer = models.Trainer(
         name=trainer.name,
@@ -826,6 +849,8 @@ def add_trainer(
         password=hashed_password,
         availability=trainer.availability,
         branch_name=current_admin.branch if current_admin.role == "admin" else trainer.branch_name,
+        revenue_config=trainer.revenue_config,
+        is_approved_by_superadmin=is_approved_by_superadmin
     )
 
     db.add(new_trainer)
@@ -876,10 +901,21 @@ def get_trainer_by_id(trainer_id: int, db: Session = Depends(database.get_db)):
     return trainer
 
 @router.put("/{trainer_id}", response_model=schemas.TrainerResponse)
-def update_trainer(trainer_id: int, trainer: schemas.TrainerCreate, db: Session = Depends(database.get_db)):
+def update_trainer(
+    trainer_id: int, 
+    trainer: schemas.TrainerCreate, 
+    db: Session = Depends(database.get_db),
+    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin),
+):
     db_trainer = db.query(models.Trainer).filter(models.Trainer.id == trainer_id).first()
     if not db_trainer:
         raise HTTPException(status_code=404, detail="Trainer not found")
+
+    if trainer.revenue_config and trainer.revenue_config != db_trainer.revenue_config:
+        if current_admin.role == "superadmin":
+            db_trainer.is_approved_by_superadmin = True
+        else:
+            db_trainer.is_approved_by_superadmin = False
 
     db_trainer.name = trainer.name
     db_trainer.specialization = ",".join(trainer.specialization)
@@ -887,9 +923,17 @@ def update_trainer(trainer_id: int, trainer: schemas.TrainerCreate, db: Session 
     db_trainer.experience = trainer.experience
     db_trainer.phone = trainer.phone
     db_trainer.email = trainer.email
-    db_trainer.password = utils.get_password_hash(trainer.password)
+    
+    if trainer.password:
+        db_trainer.password = utils.get_password_hash(trainer.password)
+
     db_trainer.availability = trainer.availability
-    db_trainer.branch_name = trainer.branch_name
+    if current_admin.role == "superadmin" and trainer.branch_name:
+         db_trainer.branch_name = trainer.branch_name
+    elif current_admin.role == "admin":
+        db_trainer.branch_name = current_admin.branch
+
+    db_trainer.revenue_config = trainer.revenue_config
 
     db.commit()
     db.refresh(db_trainer)
@@ -905,3 +949,47 @@ def delete_trainer(trainer_id: int, db: Session = Depends(database.get_db)):
     db.delete(db_trainer)
     db.commit()
     return {"message": "Trainer deleted successfully"}
+
+@router.put("/revenue/{trainer_id}", response_model=schemas.TrainerResponse)
+def set_trainer_revenue(
+    trainer_id: int,
+    revenue_update: schemas.TrainerRevenueUpdate,
+    db: Session = Depends(database.get_db),
+    current_admin: schemas.UserResponse = Depends(get_current_admin),
+):
+    db_trainer = db.query(models.Trainer).filter(
+        models.Trainer.id == trainer_id,
+        models.Trainer.branch_name == current_admin.branch
+    ).first()
+
+    if not db_trainer:
+        raise HTTPException(status_code=404, detail="Trainer not found in your branch.")
+
+    db_trainer.revenue_config = revenue_update.revenue_config
+    db_trainer.is_approved_by_superadmin = False
+
+    db.commit()
+    db.refresh(db_trainer)
+    db_trainer.specialization = db_trainer.specialization.split(",") if isinstance(db_trainer.specialization, str) and db_trainer.specialization else []
+    return db_trainer
+
+@router.put("/revenue/{trainer_id}/approve", response_model=schemas.TrainerResponse)
+def approve_trainer_revenue(
+    trainer_id: int,
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin),
+):
+    db_trainer = db.query(models.Trainer).filter(models.Trainer.id == trainer_id).first()
+
+    if not db_trainer:
+        raise HTTPException(status_code=404, detail="Trainer not found.")
+
+    if db_trainer.is_approved_by_superadmin:
+        raise HTTPException(status_code=400, detail="Revenue configuration is already approved.")
+    
+    db_trainer.is_approved_by_superadmin = True
+    db.commit()
+    db.refresh(db_trainer)
+    db_trainer.specialization = db_trainer.specialization.split(",") if isinstance(db_trainer.specialization, str) and db_trainer.specialization else []
+    return db_trainer
+

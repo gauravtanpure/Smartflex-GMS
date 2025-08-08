@@ -1,6 +1,6 @@
 // src/components/Sidebar.tsx
 import { useEffect, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom"; // Import useNavigate
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import {
   LayoutDashboard,
@@ -8,16 +8,15 @@ import {
   Calendar,
   CreditCard,
   Dumbbell,
-  FileText,
   ChevronLeft,
   User,
   GitBranch,
   UserCheck,
   Clock,
-  ClipboardList, // New icon for Diet/Exercise Assignment - Keep if existing feature
-  HeartPulse, // New icon for My Exercise - Keep if existing feature
-  Salad, // New icon for My Diet - Keep if existing feature
-  Award, // ⬅️ NEW ICON for Membership Plans
+  HeartPulse,
+  Salad,
+  Award,
+  CircleCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +55,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     const handleStorageChange = () => {
       const storedProfileCompletion = localStorage.getItem("profile_completion_percentage");
       setProfileCompletion(storedProfileCompletion);
-      // Also update username, role, branch if they can change via storage
       setUsername(localStorage.getItem("username") || "");
       setUserRole(localStorage.getItem("role"));
       setBranch(localStorage.getItem("branch") || "");
@@ -75,7 +73,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const isMember = userRole === "member";
 
   const handleProfileClick = () => {
-    // Only members have a profile completion flow
     if (isMember) {
       navigate("/profile-completion");
       if (onMobileClose) {
@@ -96,7 +93,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 transition-all duration-300 shadow-lg", // Lighter background, subtle shadow
+          "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 transition-all duration-300 shadow-lg",
           "lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed ? "w-16" : "w-64"
@@ -107,7 +104,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           {!collapsed && (
             <div className="flex items-center space-x-2">
               <img
-                src="/logo2.png" // Ensure this path is correct and image exists
+                src="/logo2.png"
                 alt="SmartFlex Fitness Logo"
                 className="w-auto h-12"
               />
@@ -115,30 +112,29 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors lg:hidden" // Lighter hover
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
           >
             <ChevronLeft
               className={cn(
-                "w-4 h-4 transition-transform text-gray-500", // Ensure icon color
+                "w-4 h-4 transition-transform text-gray-500",
                 collapsed && "rotate-180"
               )}
             />
           </button>
         </div>
 
-        <nav className="p-3 space-y-1" font-poppins> {/* Adjusted padding and spacing */}
-          {/* Dashboard is for everyone */}
+        <nav className="p-3 space-y-1" font-poppins>
           <NavLink
             to="/dashboard"
-            onClick={onMobileClose} // Close sidebar on mobile after click
+            onClick={onMobileClose}
             className={cn(
               "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
               location.pathname === "/dashboard"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" // Adjusted colors for better contrast
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             )}
           >
-            <LayoutDashboard className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/dashboard" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} /> {/* Icon color adjustment */}
+            <LayoutDashboard className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/dashboard" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
             {!collapsed && (
               <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Dashboard
@@ -146,11 +142,10 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             )}
           </NavLink>
 
-          {/* Conditional rendering for Manage Fees for 'admin' role */}
-          {(isAdmin) && ( // Admin or Superadmin
+          {(isAdmin) && (
             <NavLink
               to="/manage-fees"
-              onClick={onMobileClose} // Close sidebar on mobile after click
+              onClick={onMobileClose}
               className={cn(
                 "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                 location.pathname === "/manage-fees"
@@ -188,7 +183,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           )}
 
 
-          {/* Conditional rendering for Manage Membership Plans for 'admin' and 'superadmin' roles */}
           {(isAdmin || isSuperAdmin) && (
             <NavLink
               to="/manage-membership-plans"
@@ -209,12 +203,11 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </NavLink>
           )}
 
-          {/* Regular user/member menu items */}
           {isMember && (
             <>
               <NavLink
                 to="/attendance"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/attendance"
@@ -231,7 +224,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
               <NavLink
                 to="/fees"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/fees"
@@ -248,7 +241,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
               <NavLink
                 to="/my-exercise"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/my-exercise"
@@ -265,7 +258,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
               <NavLink
                 to="/my-diet"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/my-diet"
@@ -283,11 +276,10 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </>
           )}
 
-          {/* Trainers link: Visible to Members, Admins, Superadmins, but NOT Trainers themselves */}
           {(!isTrainer) && (
             <NavLink
               to="/trainers"
-              onClick={onMobileClose} // Close sidebar on mobile after click
+              onClick={onMobileClose}
               className={cn(
                 "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                 location.pathname === "/trainers"
@@ -304,12 +296,11 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </NavLink>
           )}
 
-          {/* Conditional rendering for Trainer specific options */}
           {isTrainer && (
             <>
               <NavLink
                 to="/trainer/users"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/trainer/users"
@@ -326,7 +317,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
               <NavLink
                 to="/trainer/attendance"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/trainer/attendance"
@@ -343,7 +334,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
               <NavLink
                 to="/trainer/sessions"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/trainer/sessions"
@@ -360,7 +351,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
               <NavLink
                 to="/trainer/assign-diet"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/trainer/assign-diet"
@@ -377,7 +368,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               </NavLink>
               <NavLink
                 to="/trainer/assign-exercise"
-                onClick={onMobileClose} // Close sidebar on mobile after click
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/trainer/assign-exercise"
@@ -395,12 +386,10 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </>
           )}
 
-          {/* Conditional rendering for Manage Users for 'admin' role */}
-          {/* Conditional rendering for Manage Trainers for 'admin' role */}
           {isAdmin && (
             <NavLink
               to="/manage-trainers"
-              onClick={onMobileClose} // Close sidebar on mobile after click
+              onClick={onMobileClose}
               className={cn(
                 "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                 location.pathname === "/manage-trainers"
@@ -417,44 +406,61 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </NavLink>
           )}
 
-          {/* Conditional rendering for Manage Branches for 'superadmin' role */}
           {isSuperAdmin && (
-            <NavLink
-              to="/manage-branches"
-              onClick={onMobileClose} // Close sidebar on mobile after click
-              className={cn(
-                "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                location.pathname === "/manage-branches"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              )}
-            >
-              <GitBranch className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-branches" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
-              {!collapsed && (
-                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                  Manage Branches
-                </span>
-              )}
-            </NavLink>
+            <>
+              <NavLink
+                to="/manage-branches"
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/manage-branches"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <GitBranch className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-branches" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                    Manage Branches
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="/approve-trainer-revenue"
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/approve-trainer-revenue"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <CircleCheck className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/approve-trainer-revenue" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                    Approve Trainer Revenue
+                  </span>
+                )}
+              </NavLink>
+            </>
           )}
         </nav>
 
-        {/* User Profile / Role Display at the bottom */}
         <div
           className={cn(
             "absolute bottom-4 left-4 right-4",
-            isMember ? "cursor-pointer" : "cursor-default" // Only clickable for members
+            isMember ? "cursor-pointer" : "cursor-default"
           )}
           onClick={handleProfileClick}
         >
-          <div className={cn("flex items-center space-x-3 p-3 rounded-lg", collapsed ? "justify-center bg-gray-100" : "bg-gray-100")}> {/* Adjusted background */}
+          <div className={cn("flex items-center space-x-3 p-3 rounded-lg", collapsed ? "justify-center bg-gray-100" : "bg-gray-100")}>
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
               <User className="w-4 h-4 text-primary-foreground" />
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate text-gray-800" style={{ fontFamily: "Montserrat, sans-serif" }}>{username || "User"}</p>
-                <p className="text-xs text-gray-500" style={{ fontFamily: "Montserrat, sans-serif" }}> {/* Ensured text color */}
+                <p className="text-xs text-gray-500" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : isTrainer ? `Trainer (${branch || 'No Branch'})` : `Member (${profileCompletion || '0'}%)`}
                 </p>
               </div>
