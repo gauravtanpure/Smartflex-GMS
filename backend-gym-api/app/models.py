@@ -3,6 +3,8 @@ from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Time
 from sqlalchemy.orm import relationship
 from .database import Base
 from sqlalchemy import Boolean, DateTime, func # Keep these imports
+from datetime import datetime
+
 
 class User(Base):
     __tablename__ = "users"
@@ -23,6 +25,9 @@ class User(Base):
     assigned_fees = relationship("FeeAssignment", foreign_keys="[FeeAssignment.assigned_by_user_id]", back_populates="assigned_by_user")
     session_attendances = relationship("SessionAttendance", back_populates="user")
     user_notifications = relationship("UserNotification", back_populates="user")
+    # ⬅️ Corrected: Add relationships for PTO requests
+    # pto_requests_trainer = relationship("PTORequest", back_populates="trainer_user", foreign_keys="[PTORequest.trainer_id]")
+    # pto_requests_approved_by = relationship("PTORequest", back_populates="approved_by_user", foreign_keys="[PTORequest.approved_by_admin_id]")
 
 
 class Trainer(Base):
@@ -47,9 +52,31 @@ class Trainer(Base):
     # Add relationships for diet and exercise plans assigned by this trainer
     assigned_diet_plans = relationship("DietPlan", back_populates="assigned_by_trainer")
     assigned_exercise_plans = relationship("ExercisePlan", back_populates="assigned_by_trainer")
+    pto_requests = relationship("PTORequest", back_populates="trainer")
 
 
-# New Model for Diet Plan
+# New Model for PTO Requests ⬅️ NEW MODEL
+class PTORequest(Base):
+    __tablename__ = "pto_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trainer_id = Column(Integer, ForeignKey("trainers.id"), nullable=False)
+    branch_name = Column(String, nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    reason = Column(String, nullable=True)
+    status = Column(String, default="pending")
+    approved_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # ✅ Relationship to Trainer table
+    trainer = relationship("Trainer", back_populates="pto_requests")
+
+    # Optional: relationship to admin who approved/rejected
+    approved_by_admin = relationship("User", foreign_keys=[approved_by_admin_id])
+
+
 class DietPlan(Base):
     __tablename__ = "diet_plans"
 

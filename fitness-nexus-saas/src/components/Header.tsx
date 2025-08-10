@@ -60,7 +60,8 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
     setShowDropdown(!showDropdown);
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
+  // Inside handleNotificationClick function in Header.tsx
+const handleNotificationClick = async (notification: Notification) => {
     const token = localStorage.getItem("token");
     try {
       // Mark the specific notification as read
@@ -77,26 +78,32 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
           navigate("/fees");
           break;
         case "diet_plan_assigned":
-          navigate("/trainer/assign-diet"); // ✅ correct route
+          navigate("/trainer/assign-diet");
           break;
         case "exercise_plan_assigned":
-          navigate("/trainer/assign-exercise"); // ✅ correct route
+          navigate("/trainer/assign-exercise");
           break;
         case "diet_plan_assigned_to_user":
-          navigate("/my-diet"); // ✅ correct route
+          navigate("/my-diet");
           break;
         case "exercise_plan_assigned_to_user":
-          navigate("/my-exercise"); // ✅ correct route
+          navigate("/my-exercise");
+          break;
+        case "revenue_approval_pending": // New case for superadmin
+          navigate("/superadmin/approve-revenue");
+          break;
+        case "revenue_approval_complete": // New case for admin
+          navigate("/manage-trainers");
           break;
         default:
           navigate("/dashboard");
           break;
       }
-      setShowDropdown(false); // Close the dropdown after navigation
+      setShowDropdown(false);
     } catch (err) {
       console.error("Failed to handle notification click:", err);
     }
-  };
+};
 
 
   return (

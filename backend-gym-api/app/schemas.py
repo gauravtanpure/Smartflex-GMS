@@ -337,3 +337,25 @@ class BulkAttendanceEntry(BaseModel):
     user_id: int
     date: date
     status: str
+
+# ⬅️ Corrected Schemas for PTO Requests
+class PTORequestCreate(BaseModel):
+    start_date: date
+    end_date: date
+    reason: Optional[str] = None
+
+class PTORequestResponse(BaseModel):
+    id: int
+    trainer_id: int
+    branch_name: str
+    start_date: date
+    end_date: date
+    reason: Optional[str]
+    status: str
+    approved_by_admin_id: Optional[int]
+    created_at: datetime
+    updated_at: datetime
+    trainer: TrainerResponse  # from models relationship
+
+    class Config:
+        from_attributes = True

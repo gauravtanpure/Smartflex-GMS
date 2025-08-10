@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, time
 from .. import models, schemas, database, utils
+from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
+
 
 router = APIRouter(prefix="/trainers", tags=["Trainers"])
 
@@ -427,6 +430,168 @@ def delete_session_attendance(
     db.commit()
     return {"message": "Session deleted successfully"}
 
+#PTO requests
+
+from sqlalchemy.orm import joinedload
+from sqlalchemy import and_
+
+@router.post("/pto-request", response_model=schemas.PTORequestResponse)
+def create_pto_request(
+    request_data: schemas.PTORequestCreate,
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer),
+):
+    if not current_trainer.branch:
+        raise HTTPException(status_code=400, detail="Trainer's branch is not set.")
+
+    # Prevent overlapping PTOs
+    overlap = db.query(models.PTORequest).filter(
+        models.PTORequest.trainer_id == current_trainer.id,
+        models.PTORequest.status != "rejected",
+        and_(
+            request_data.start_date <= models.PTORequest.end_date,
+            request_data.end_date >= models.PTORequest.start_date
+        )
+    ).first()
+
+    if overlap:
+        raise HTTPException(status_code=400, detail="Overlapping PTO request already exists.")
+
+    new_pto = models.PTORequest(
+        trainer_id=current_trainer.id,
+        branch_name=current_trainer.branch,
+        start_date=request_data.start_date,
+        end_date=request_data.end_date,
+        reason=request_data.reason,
+        status="pending"
+    )
+
+    db.add(new_pto)
+    db.commit()
+    db.refresh(new_pto)
+
+    # Convert specialization string to list if trainer is loaded
+    if new_pto.trainer and isinstance(new_pto.trainer.specialization, str):
+        new_pto.trainer.specialization = [
+            s.strip() for s in new_pto.trainer.specialization.split(",")
+        ]
+
+    return new_pto
+
+
+@router.get("/my-pto-requests", response_model=List[schemas.PTORequestResponse])
+def get_my_pto_requests(
+    db: Session = Depends(database.get_db),
+    current_trainer: schemas.UserResponse = Depends(get_current_trainer),
+):
+    pto_requests = (
+        db.query(models.PTORequest)
+        .options(joinedload(models.PTORequest.trainer))
+        .filter(models.PTORequest.trainer_id == current_trainer.id)
+        .order_by(models.PTORequest.created_at.desc())
+        .all()
+    )
+
+    # Ensure specialization is returned as a list
+    for req in pto_requests:
+        if req.trainer and isinstance(req.trainer.specialization, str):
+            req.trainer.specialization = [
+                s.strip() for s in req.trainer.specialization.split(",")
+            ]
+
+    return pto_requests
+
+
+
+@router.get("/pto-requests", response_model=List[schemas.PTORequestResponse])
+def get_all_pto_requests_for_admin(
+    db: Session = Depends(database.get_db),
+    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin),
+):
+    query = db.query(models.PTORequest).join(models.Trainer).options(
+        joinedload(models.PTORequest.trainer)
+    )
+
+    if current_admin.role == "admin":
+        query = query.filter(models.PTORequest.branch_name == current_admin.branch)
+
+    results = query.order_by(models.PTORequest.created_at.desc()).all()
+
+    # Convert specialization string into list for API response
+    for req in results:
+        if req.trainer and isinstance(req.trainer.specialization, str):
+            req.trainer.specialization = req.trainer.specialization.split(",")
+    return results
+
+
+from sqlalchemy.orm import joinedload
+
+@router.put("/pto-request/{request_id}/approve", response_model=schemas.PTORequestResponse)
+def approve_pto_request(
+    request_id: int,
+    db: Session = Depends(database.get_db),
+    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin),
+):
+    pto = (
+        db.query(models.PTORequest)
+        .options(joinedload(models.PTORequest.trainer))
+        .filter(models.PTORequest.id == request_id)
+        .first()
+    )
+
+    if not pto:
+        raise HTTPException(status_code=404, detail="PTO request not found.")
+
+    if current_admin.role == "admin" and pto.branch_name != current_admin.branch:
+        raise HTTPException(status_code=403, detail="Not authorized to approve this request.")
+
+    pto.status = "approved"
+    pto.approved_by_admin_id = current_admin.id
+    db.commit()
+    db.refresh(pto)
+
+    # Convert specialization string → list
+    if pto.trainer and isinstance(pto.trainer.specialization, str):
+        pto.trainer.specialization = [
+            s.strip() for s in pto.trainer.specialization.split(",")
+        ]
+
+    return pto
+
+
+@router.put("/pto-request/{request_id}/reject", response_model=schemas.PTORequestResponse)
+def reject_pto_request(
+    request_id: int,
+    db: Session = Depends(database.get_db),
+    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin),
+):
+    pto = (
+        db.query(models.PTORequest)
+        .options(joinedload(models.PTORequest.trainer))
+        .filter(models.PTORequest.id == request_id)
+        .first()
+    )
+
+    if not pto:
+        raise HTTPException(status_code=404, detail="PTO request not found.")
+
+    if current_admin.role == "admin" and pto.branch_name != current_admin.branch:
+        raise HTTPException(status_code=403, detail="Not authorized to reject this request.")
+
+    pto.status = "rejected"
+    pto.approved_by_admin_id = current_admin.id
+    db.commit()
+    db.refresh(pto)
+
+    # Convert specialization string → list
+    if pto.trainer and isinstance(pto.trainer.specialization, str):
+        pto.trainer.specialization = [
+            s.strip() for s in pto.trainer.specialization.split(",")
+        ]
+
+    return pto
+
+    
 @router.post("/diet-plans", response_model=schemas.DietPlanResponse)
 def create_diet_plan(
     diet_plan: schemas.DietPlanCreate,
@@ -968,6 +1133,17 @@ def set_trainer_revenue(
     db_trainer.revenue_config = revenue_update.revenue_config
     db_trainer.is_approved_by_superadmin = False
 
+    # Create a notification for the superadmin
+    superadmin_user = db.query(models.User).filter(models.User.role == "superadmin").first()
+    if superadmin_user:
+        notification_message = f"Revenue configuration for trainer {db_trainer.name} is awaiting your approval."
+        new_notification = models.UserNotification(
+            user_id=superadmin_user.id,
+            message=notification_message,
+            notification_type="revenue_approval_pending"
+        )
+        db.add(new_notification)
+
     db.commit()
     db.refresh(db_trainer)
     db_trainer.specialization = db_trainer.specialization.split(",") if isinstance(db_trainer.specialization, str) and db_trainer.specialization else []
@@ -988,8 +1164,24 @@ def approve_trainer_revenue(
         raise HTTPException(status_code=400, detail="Revenue configuration is already approved.")
     
     db_trainer.is_approved_by_superadmin = True
+
+    # Find the admin of the trainer's branch
+    admin_user = db.query(models.User).filter(
+        models.User.role == "admin",
+        models.User.branch == db_trainer.branch_name
+    ).first()
+
+    # Create a notification for the admin
+    if admin_user:
+        notification_message = f"Superadmin has approved the revenue configuration for trainer {db_trainer.name}."
+        new_notification = models.UserNotification(
+            user_id=admin_user.id,
+            message=notification_message,
+            notification_type="revenue_approval_complete"
+        )
+        db.add(new_notification)
+
     db.commit()
     db.refresh(db_trainer)
     db_trainer.specialization = db_trainer.specialization.split(",") if isinstance(db_trainer.specialization, str) and db_trainer.specialization else []
     return db_trainer
-

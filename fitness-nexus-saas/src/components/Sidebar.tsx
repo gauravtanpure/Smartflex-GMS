@@ -17,6 +17,8 @@ import {
   Salad,
   Award,
   CircleCheck,
+  Plane, // ⬅️ NEW ICON
+  PlaneTakeoff, // ⬅️ NEW ICON
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -383,27 +385,65 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   </span>
                 )}
               </NavLink>
+              {/* ⬅️ New Trainer PTO Request Link */}
+              <NavLink
+                to="/trainer/pto-request"
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/trainer/pto-request"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <Plane className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/trainer/pto-request" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                    Request PTO
+                  </span>
+                )}
+              </NavLink>
             </>
           )}
 
           {isAdmin && (
-            <NavLink
-              to="/manage-trainers"
-              onClick={onMobileClose}
-              className={cn(
-                "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                location.pathname === "/manage-trainers"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              )}
-            >
-              <Users className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-trainers" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
-              {!collapsed && (
-                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                  Manage Trainers
-                </span>
-              )}
-            </NavLink>
+            <>
+              <NavLink
+                to="/manage-trainers"
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/manage-trainers"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <Users className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-trainers" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                    Manage Trainers
+                  </span>
+                )}
+              </NavLink>
+              {/* ⬅️ New Admin Manage PTO Requests Link */}
+              <NavLink
+                to="/admin/manage-pto"
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/admin/manage-pto"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <PlaneTakeoff className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/admin/manage-pto" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                    Manage PTO Requests
+                  </span>
+                )}
+              </NavLink>
+            </>
           )}
 
           {isSuperAdmin && (
