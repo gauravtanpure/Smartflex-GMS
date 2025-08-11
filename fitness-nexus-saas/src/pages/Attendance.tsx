@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, Users } from "lucide-react";
+import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface UserAttendanceRecord {
   id: number;
@@ -31,11 +32,50 @@ interface SessionAttendanceRecord {
 
 type CombinedAttendanceRecord = UserAttendanceRecord | SessionAttendanceRecord;
 
+/**
+ * Generates an array of calendar days for a given month and year.
+ * Each day object includes its date, attendance status, and a flag for whether it's in the current month.
+ */
+const getCalendarDays = (year: number, month: number, attendanceData: UserAttendanceRecord[]) => {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+  const calendarDays = [];
+  const attendanceMap = new Map();
+
+  attendanceData.forEach(record => {
+    attendanceMap.set(record.date, record.status);
+  });
+
+  // Calculate the number of leading days from the previous month (to start the week on Monday)
+  const prevMonthDays = (firstDayOfMonth + 6) % 7;
+  for (let i = 0; i < prevMonthDays; i++) {
+    calendarDays.push({ date: null, status: 'padding', isCurrentMonth: false });
+  }
+
+  // Add all days of the current month
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    const status = attendanceMap.get(dateStr) || 'no-gym';
+    calendarDays.push({ date: new Date(dateStr), status: status, dayOfMonth: i, isCurrentMonth: true });
+  }
+
+  // Add trailing days from the next month to fill the last row
+  while (calendarDays.length % 7 !== 0) {
+    calendarDays.push({ date: null, status: 'padding', isCurrentMonth: false });
+  }
+
+  return calendarDays;
+};
+
 export default function Attendance() {
   const [attendanceData, setAttendanceData] = useState<CombinedAttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // New state for the calendar view
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const fetchMyAttendance = async () => {
     setLoading(true);
@@ -147,12 +187,21 @@ export default function Attendance() {
   const totalDays = generalAttendance.length;
   const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
+  const handlePrevMonth = () => {
+    setCurrentDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setCurrentDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
+  };
+
+  const calendarDays = getCalendarDays(currentDate.getFullYear(), currentDate.getMonth(), generalAttendance);
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-poppins">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-          {/* ONLY this heading will be faint orange */}
           <h1 className="text-4xl font-extrabold text-logoOrange mb-2">My Attendance</h1>
           <p className="text-lg text-muted-foreground">Track your gym check-ins and session consistency.</p>
         </div>
@@ -192,7 +241,7 @@ export default function Attendance() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="rounded-xl shadow-md border-gray-100 transition-transform duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold"> {/* Changed back to gray-800 */}
+              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold">
                 <CheckCircle className="w-5 h-5 text-success" />
                 <span>Days Present (General)</span>
               </CardTitle>
@@ -205,7 +254,7 @@ export default function Attendance() {
 
           <Card className="rounded-xl shadow-md border-gray-100 transition-transform duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold"> {/* Changed back to gray-800 */}
+              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold">
                 <XCircle className="w-5 h-5 text-destructive" />
                 <span>Days Absent (General)</span>
               </CardTitle>
@@ -218,41 +267,49 @@ export default function Attendance() {
 
           <Card className="rounded-xl shadow-md border-gray-100 transition-transform duration-200 hover:scale-[1.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold"> {/* Changed back to gray-800 */}
+              <CardTitle className="text-lg flex items-center space-x-2 text-gray-800 font-semibold">
                 <TrendingUp className="w-5 h-5 text-logoOrange" />
                 <span>General Attendance Rate</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold text-logoOrange">{attendancePercentage}%</div>
-              <Progress value={attendancePercentage} className="mt-2 h-2 [&>*]:bg-logoOrange" /> {/* Progress bar keeps orange fill */}
+              <Progress value={attendancePercentage} className="mt-2 h-2 [&>*]:bg-logoOrange" />
               <p className="text-xs text-muted-foreground mt-1">Based on general gym visits.</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* General Attendance List */}
+      ---
+
+      {/* General Attendance Calendar */}
       <Card className="rounded-xl shadow-md mb-8">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800"> {/* Changed back to gray-800 */}
-            <Clock className="w-6 h-6 text-gray-600" /> {/* Icon color adjusted */}
-            <span>General Gym Attendance History</span>
-          </CardTitle>
+          <div className="flex items-center justify-between mb-4">
+            <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800">
+              <Clock className="w-6 h-6 text-gray-600" />
+              <span>General Gym Attendance</span>
+            </CardTitle>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-lg font-semibold w-36 text-center">
+                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </span>
+              <Button variant="outline" size="icon" onClick={handleNextMonth}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={`gen-load-${i}`} className="animate-pulse flex items-center space-x-4 p-4 rounded-lg border bg-gray-100">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1">
-                    <div className="h-5 bg-gray-200 rounded w-2/3 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                  <div className="h-8 bg-gray-200 rounded w-20"></div>
-                </div>
-              ))}
+            <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: 35 }).map((_, i) => (
+                    <div key={`cal-load-${i}`} className="aspect-square flex items-center justify-center bg-gray-100 rounded-lg animate-pulse"></div>
+                ))}
             </div>
           ) : generalAttendance.length === 0 ? (
             <div className="text-center py-10 border border-dashed rounded-lg text-gray-500 bg-gray-50">
@@ -263,53 +320,74 @@ export default function Attendance() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {generalAttendance.map((record) => (
-                <div key={`general-${record.id}`} className="flex items-center justify-between p-4 rounded-lg border bg-white shadow-sm hover:bg-gray-50 transition-colors duration-200 ease-in-out">
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold ${
-                      record.status === "present"
-                        ? "bg-success/80"
-                        : "bg-destructive/80"
-                    }`}>
-                      {record.status === "present" ? (
-                        <CheckCircle className="w-6 h-6" />
-                      ) : (
-                        <XCircle className="w-6 h-6" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-lg text-gray-800">
-                        {new Date(record.date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600 mt-1">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span>General Check-in</span>
-                        <span className="text-gray-400">•</span>
-                        <span>Branch: {record.branch}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant={record.status === "present" ? "default" : "destructive"} className="px-3 py-1 text-base font-semibold">
-                    {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                  </Badge>
+            <div className="p-4 bg-white rounded-lg">
+                <div className="grid grid-cols-7 text-center font-semibold text-gray-500 mb-2">
+                    {weekDays.map(day => (
+                        <div key={day}>{day}</div>
+                    ))}
                 </div>
-              ))}
+                <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((day, index) => {
+                        let cellClass = "aspect-square flex flex-col items-center justify-center rounded-lg relative overflow-hidden transition-all duration-100 ease-in-out group";
+                        let statusIcon = null;
+                        let tooltip = "";
+
+                        switch (day.status) {
+                            case 'present':
+                                cellClass += " bg-success/10 border-2 border-success";
+                                statusIcon = <CheckCircle className="w-5 h-5 text-success/80 group-hover:text-success z-10" />;
+                                tooltip = "Present";
+                                break;
+                            case 'absent':
+                                cellClass += " bg-destructive/10 border-2 border-destructive";
+                                statusIcon = <XCircle className="w-5 h-5 text-destructive/80 group-hover:text-destructive z-10" />;
+                                tooltip = "Absent";
+                                break;
+                            case 'no-gym':
+                                cellClass += " bg-gray-100 border-2 border-transparent text-gray-400";
+                                tooltip = "No visit recorded";
+                                break;
+                            default: // 'padding'
+                                cellClass += " bg-transparent border-transparent text-gray-300 pointer-events-none";
+                                break;
+                        }
+
+                        if (day.status !== 'no-gym' && day.status !== 'padding') {
+                          cellClass += " hover:bg-white hover:shadow-lg hover:border-gray-200 cursor-pointer";
+                        }
+
+                        return (
+                          <div key={index} className={cellClass}>
+                            {day.date && (
+                              <>
+                                <span className={`text-sm font-medium ${!day.isCurrentMonth ? 'text-gray-300' : ''}`}>
+                                    {day.dayOfMonth}
+                                </span>
+                                {statusIcon}
+                              </>
+                            )}
+                            <div className="absolute top-0 left-0 w-full h-full bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-100"></div>
+                            {tooltip && (
+                                <span className="absolute bottom-1/2 left-1/2 -translate-x-1/2 translate-y-[200%] group-hover:translate-y-[100%] transition-transform duration-200 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100">
+                                    {tooltip}
+                                </span>
+                            )}
+                          </div>
+                        );
+                    })}
+                </div>
             </div>
           )}
         </CardContent>
       </Card>
+      
+      ---
 
       {/* Session Attendance List */}
       <Card className="rounded-xl shadow-md mb-8">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800"> {/* Changed back to gray-800 */}
-            <Users className="w-6 h-6 text-gray-600" /> {/* Icon color adjusted */}
+          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800">
+            <Users className="w-6 h-6 text-gray-600" />
             <span>Session Attendance History</span>
           </CardTitle>
         </CardHeader>
@@ -375,12 +453,14 @@ export default function Attendance() {
           )}
         </CardContent>
       </Card>
+      
+      ---
 
       {/* Weekly Goals */}
       <Card className="rounded-xl shadow-md">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800"> {/* Changed back to gray-800 */}
-            <TrendingUp className="w-6 h-6 text-gray-600" /> {/* Icon color adjusted */}
+          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800">
+            <TrendingUp className="w-6 h-6 text-gray-600" />
             <span>Weekly Goals</span>
           </CardTitle>
         </CardHeader>

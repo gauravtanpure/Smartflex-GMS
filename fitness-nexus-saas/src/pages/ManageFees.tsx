@@ -175,7 +175,7 @@ export default function ManageFees() {
   return (
     <div className="p-2" font-poppins>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-3xl font-bold" style={{ color: "#6b7e86" }}>Manage Fees</h2>
+        <h2 className="text-3xl font-bold text-logoOrange">Manage Fees</h2>
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded"
           onClick={exportToCSV}
@@ -186,7 +186,7 @@ export default function ManageFees() {
 
       {/* Assign New Fee */}
       <div className="bg-white p-4 rounded shadow mb-6">
-        <h3 className="text-xl font-semibold mb-3">Assign New Fee</h3>
+        <h3 className="text-xl font-semibold mb-3 text-logoOrange">Assign New Fee</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
           <select
             value={form.user_id}

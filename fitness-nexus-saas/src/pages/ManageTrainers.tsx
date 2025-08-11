@@ -182,7 +182,7 @@ export default function ManageTrainers() {
   return (
     <div className="space-y-6 p-4" font-poppins>
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold" style={{ color: "#6b7e86" }}>Manage Trainers</h1>
+        <h1 className="text-3xl font-bold text-logoOrange">Manage Trainers</h1>
         <Button onClick={() => setDialogOpen(true)}>Add Trainer</Button>
       </div>
 

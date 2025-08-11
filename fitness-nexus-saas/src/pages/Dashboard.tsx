@@ -116,7 +116,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto space-y-6 text-[#6b7e86]">
         <div className="space-y-1">
           <h1 className="text-2xl md:text-3xl font-bold text-black">Welcome back,</h1>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#6b7e86]">{username}</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-[#3f545eff]">{username}</h2>
         </div>
 
         {/* Daily Motivation */}

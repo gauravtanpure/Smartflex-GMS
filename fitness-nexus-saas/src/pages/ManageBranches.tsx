@@ -196,7 +196,7 @@ export default function ManageBranches() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-foreground">Manage Branches</h1>
+      <h1 className="text-3xl font-bold text-foreground text-logoOrange">Manage Branches</h1>
 
       {loading ? (
         <p>Loading branches and admins...</p>
@@ -211,7 +211,7 @@ export default function ManageBranches() {
               className="cursor-pointer hover:shadow-lg transition"
             >
               <CardHeader>
-                <CardTitle>{branch.name}</CardTitle>
+                <CardTitle className="text-logoOrange">{branch.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">

@@ -131,10 +131,10 @@ const PTORequest = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Request Paid Time Off</h1>
+      <h1 className="text-3xl font-bold text-logoOrange">Request Paid Time Off</h1>
       <Card>
         <CardHeader>
-          <CardTitle>Submit a New Request</CardTitle>
+          <CardTitle className="text-logoOrange">Submit a New Request</CardTitle>
           <CardDescription>
             Fill out the form below to request time off from work.
           </CardDescription>

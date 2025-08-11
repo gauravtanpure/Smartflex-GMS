@@ -68,7 +68,7 @@ const ApproveTrainerRevenue = () => {
 
   return (
     <div className="space-y-6 p-4">
-      <h1 className="text-3xl font-bold" style={{ color: "#6b7e86" }}>Approve Trainer Revenue</h1>
+      <h1 className="text-3xl font-bold text-logoOrange">Approve Trainer Revenue</h1>
       {pendingTrainers.length === 0 ? (
         <p>No trainers are waiting for revenue configuration approval.</p>
       ) : (
@@ -76,7 +76,7 @@ const ApproveTrainerRevenue = () => {
           {pendingTrainers.map((trainer) => (
             <Card key={trainer.id}>
               <CardHeader>
-                <CardTitle>{trainer.name}</CardTitle>
+                <CardTitle className="text-logoOrange">{trainer.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">Branch: {trainer.branch_name}</p>
               </CardHeader>
               <CardContent>

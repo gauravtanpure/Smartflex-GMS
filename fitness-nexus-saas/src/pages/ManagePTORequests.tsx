@@ -135,10 +135,10 @@ const ManagePTORequests = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Manage PTO Requests</h1>
+      <h1 className="text-3xl font-bold text-logoOrange">Manage PTO Requests</h1>
       <Card>
         <CardHeader>
-          <CardTitle>Pending & Past Requests</CardTitle>
+          <CardTitle className="text-logoOrange">Pending & Past Requests</CardTitle>
           <CardDescription>
             Review all paid time off requests from trainers in your branch.
           </CardDescription>

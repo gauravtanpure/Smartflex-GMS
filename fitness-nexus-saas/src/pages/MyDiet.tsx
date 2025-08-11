@@ -48,9 +48,9 @@ export default function MyDiet() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-poppins">
-      <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-center" style={{ color: "#6b7e86" }}>My Diet Plans</h2>
+      <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-left text-logoOrange">My Diet Plans</h2>
       {dietPlans.length === 0 ? (
-        <p className="text-gray-600 text-center text-lg" style={{ color: "#6b7e86" }}>No diet plans assigned to you yet. Check back later!</p>
+        <p className="text-gray-600 text-center text-lg text-logoOrange">No diet plans assigned to you yet. Check back later!</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {dietPlans.map(plan => (

@@ -71,7 +71,7 @@ export default function Fees() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-extrabold" style={{ color: "#6b7e86" }}>My Fees</h1>
+          <h1 className="text-4xl font-extrabold text-logoOrange">My Fees</h1>
           <p className="text-lg text-muted-foreground">Manage your gym payments and view your financial history.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
@@ -91,7 +91,7 @@ export default function Fees() {
         <CardHeader className="pb-4 border-b">
           <CardTitle className="text-2xl font-bold flex items-center space-x-3" style={{ color: "#6b7e86" }}>
             <DollarSign className="w-6 h-6 text-indigo-600" />
-            <span>Fee Details</span>
+            <span className="text-logoOrange">Fee Details</span>
           </CardTitle>
           <CardDescription>
             A comprehensive list of all your assigned fees.
