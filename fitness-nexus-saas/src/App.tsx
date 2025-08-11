@@ -28,6 +28,7 @@ import BranchUserList from "./pages/BranchUserList";
 import ManageMembershipPlans from "./pages/ManageMembershipPlans";
 import ApproveTrainerRevenue from "./pages/ApproveTrainerRevenue";
 import PTORequest from "./pages/PTORequest";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import ManagePTORequests from "./pages/ManagePTORequests";
 
 
@@ -93,7 +94,7 @@ const App = () => {
           <Route path="/manage-membership-plans" element={renderProtectedRoute(ManageMembershipPlans, ["admin", "superadmin"])} />
           <Route path="/branch-users" element={renderProtectedRoute(BranchUserList, ["admin"])} />
           <Route path="/approve-trainer-revenue" element={renderProtectedRoute(ApproveTrainerRevenue, ["superadmin"])} />
-
+          <Route path="/admin-analytics" element={renderProtectedRoute(AdminAnalytics, ["admin", "superadmin"])} />
           {/* New PTO Routes */}
           <Route path="/trainer/pto-request" element={renderProtectedRoute(PTORequest, ["trainer"])} />
           <Route path="/admin/manage-pto" element={renderProtectedRoute(ManagePTORequests, ["admin"])} />

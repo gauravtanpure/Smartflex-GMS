@@ -14,6 +14,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import AdminAnalytics from "./AdminAnalytics";
 
 // Quotes to rotate daily
 const quotes = [
@@ -33,17 +34,24 @@ export default function Dashboard() {
   const [totalDaysInMonth, setTotalDaysInMonth] = useState(30);
   const [attendedDaysThisMonth, setAttendedDaysThisMonth] = useState(0);
   const [attendedDaysThisWeek, setAttendedDaysThisWeek] = useState(0);
+  const [role, setRole] = useState<string | null>(null);
 
-  const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
-
+  // Load role & username on mount
   useEffect(() => {
+    const storedRole = localStorage.getItem("role");
     const storedUsername = localStorage.getItem("username");
+    if (storedRole) setRole(storedRole);
     if (storedUsername) setUsername(storedUsername);
+  }, []);
+
+  // Fetch attendance for non-admins
+  useEffect(() => {
+    if (!role || role === "admin" || role === "branch_admin" || role === "superadmin") return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     const fetchData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return console.error("No token found.");
-
       try {
         const res = await fetch("http://127.0.0.1:8000/users/my-attendance", {
           headers: { Authorization: `Bearer ${token}` },
@@ -87,8 +95,19 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [role]);
 
+  if (!role) {
+    return <p>Loading...</p>;
+  }
+
+  // Admin roles → show analytics page
+  if (role === "admin" || role === "branch_admin" || role === "superadmin") {
+    return <AdminAnalytics />;
+  }
+
+  // Normal user/trainer → show normal dashboard
+  const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
   const attendanceWeekPct = (attendedDaysThisWeek / 7) * 100;
   const attendanceMonthPct = (attendedDaysThisMonth / totalDaysInMonth) * 100;
 

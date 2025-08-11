@@ -144,6 +144,33 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             )}
           </NavLink>
 
+          {/* {(isAdmin) && (
+            <NavLink
+              to="/admin-analytics"
+              onClick={onMobileClose}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                location.pathname === "/admin-analytics"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              )}
+            >
+              <LayoutDashboard
+                className={cn(
+                  "w-5 h-5 flex-shrink-0",
+                  location.pathname === "/admin-analytics"
+                    ? "text-primary-foreground"
+                    : "text-gray-500 group-hover:text-gray-700"
+                )}
+              />
+              {!collapsed && (
+                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                  Analytics
+                </span>
+              )}
+            </NavLink>
+          )} */}
+
           {(isAdmin) && (
             <NavLink
               to="/manage-fees"
