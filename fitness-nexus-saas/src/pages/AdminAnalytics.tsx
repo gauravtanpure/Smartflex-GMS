@@ -29,7 +29,7 @@
 
 //   return (
 //     <div className="p-6 space-y-6">
-//       <h1 className="text-2xl font-bold">Branch Analytics</h1>
+//       <h1 className="text-2xl font-boldd">Branch Analytics</h1>
 
 //       <Card>
 //         <CardHeader><CardTitle>Users by Gender</CardTitle></CardHeader>
@@ -192,7 +192,7 @@ export default function AdminAnalytics() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-800 text-logoOrange">Analytics Dashboard</h1>
+      <h1 className="text-3xl font-boldd text-gray-800 text-logoOrange">Analytics Dashboard</h1>
       <p className="text-gray-600">Overview of user and trainer data for your branch.</p>
       
       {/* User Analytics Section */}

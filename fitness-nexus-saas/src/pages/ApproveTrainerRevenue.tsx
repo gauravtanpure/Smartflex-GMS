@@ -68,7 +68,7 @@ const ApproveTrainerRevenue = () => {
 
   return (
     <div className="space-y-6 p-4">
-      <h1 className="text-3xl font-bold text-logoOrange">Approve Trainer Revenue</h1>
+      <h1 className="text-3xl font-boldd text-logoOrange">Approve Trainer Revenue</h1>
       {pendingTrainers.length === 0 ? (
         <p>No trainers are waiting for revenue configuration approval.</p>
       ) : (

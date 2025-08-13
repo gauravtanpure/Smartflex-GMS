@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronDown, ChevronUp, ArrowDown, ArrowUp, Users as UsersIcon, Download } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface EnrolledUser {
   user_id: number;
@@ -59,7 +66,7 @@ const BranchUserList = () => {
     }
 
     if (planFilter !== "All") {
-      filtered = filtered.filter((u) => u.opted_plan === planFilter);
+      filtered = filtered = filtered.filter((u) => u.opted_plan === planFilter);
     }
 
     if (statusFilter !== "All") {
@@ -104,157 +111,196 @@ const BranchUserList = () => {
     a.click();
   };
 
-  const uniquePlans = [...new Set(users.map((u) => u.opted_plan))];
-  const uniqueGenders = [...new Set(users.map((u) => u.gender))];
-  const uniqueStatuses = [...new Set(users.map((u) => u.status))];
+  const uniquePlans = ["All", ...new Set(users.map((u) => u.opted_plan))];
+  const uniqueGenders = ["All", ...new Set(users.map((u) => u.gender))];
+  const uniqueStatuses = ["All", ...new Set(users.map((u) => u.status))];
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="space-y-4">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       {/* Header Section */}
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <input
-          type="text"
-          placeholder="Search by name"
-          className="border px-3 py-2 rounded w-full sm:w-64"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <div className="flex gap-2 flex-wrap justify-end">
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            {showFilters ? "Hide Filters" : "Show Filters"}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
+        <div className="flex flex-col">
+          <h1 className="text-2xl sm:text-3xl logoOrange">Branch Members</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage and view all enrolled members in this branch.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
+          <Badge variant="outline" className="flex items-center space-x-2 py-2 px-4 text-sm font-semibold">
+            <UsersIcon className="h-4 w-4 text-blue-500" />
+            <span>Total Members: {users.length}</span>
+          </Badge>
+          <Button onClick={downloadCSV} className="w-full sm:w-auto flex items-center space-x-2">
+            <Download className="h-4 w-4" />
+            <span>Export CSV</span>
           </Button>
-          <Button onClick={downloadCSV}>Export CSV</Button>
         </div>
       </div>
+      
+      {/* Filters and Search */}
+      <Card className="mb-6 shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+            <div className="w-full md:w-1/3">
+              <Input
+                type="text"
+                placeholder="Search by name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button
+              variant="ghost"
+              onClick={() => setShowFilters(!showFilters)}
+              className="w-full md:w-auto flex items-center space-x-2 text-blue-600 hover:bg-blue-50"
+            >
+              <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
+              {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </div>
+          {showFilters && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4 transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-top-1">
+              <div className="space-y-1">
+                <Label htmlFor="gender-filter">Gender</Label>
+                <Select value={genderFilter} onValueChange={setGenderFilter}>
+                  <SelectTrigger id="gender-filter" className="w-full">
+                    <SelectValue placeholder="Select Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {uniqueGenders.map((g) => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-      {/* Filters */}
-      {showFilters && (
-        <div className="flex flex-wrap gap-4">
-          <select
-            className="border px-3 py-2 rounded"
-            value={genderFilter}
-            onChange={(e) => setGenderFilter(e.target.value)}
-          >
-            <option value="All">All Genders</option>
-            {uniqueGenders.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
+              <div className="space-y-1">
+                <Label htmlFor="plan-filter">Plan</Label>
+                <Select value={planFilter} onValueChange={setPlanFilter}>
+                  <SelectTrigger id="plan-filter" className="w-full">
+                    <SelectValue placeholder="Select Plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {uniquePlans.map((p) => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <select
-            className="border px-3 py-2 rounded"
-            value={planFilter}
-            onChange={(e) => setPlanFilter(e.target.value)}
-          >
-            <option value="All">All Plans</option>
-            {uniquePlans.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
+              <div className="space-y-1">
+                <Label htmlFor="status-filter">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger id="status-filter" className="w-full">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {uniqueStatuses.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <select
-            className="border px-3 py-2 rounded"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="All">All Statuses</option>
-            {uniqueStatuses.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+              <div className="space-y-1">
+                <Label htmlFor="min-age">Minimum Age</Label>
+                <Input
+                  id="min-age"
+                  type="number"
+                  placeholder="Min Age"
+                  value={ageFilter > 0 ? ageFilter : ""}
+                  onChange={(e) => setAgeFilter(Number(e.target.value))}
+                />
+              </div>
 
-          <input
-            type="number"
-            className="border px-3 py-2 rounded w-24"
-            placeholder="Min Age"
-            value={ageFilter}
-            onChange={(e) => setAgeFilter(Number(e.target.value))}
-          />
+              <div className="space-y-1">
+                <Label htmlFor="sort-order">Sort By Name</Label>
+                <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as "asc" | "desc")}>
+                  <SelectTrigger id="sort-order" className="w-full">
+                    <SelectValue placeholder="Sort Order" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">A-Z</SelectItem>
+                    <SelectItem value="desc">Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-          <select
-            className="border px-3 py-2 rounded"
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
-          >
-            <option value="asc">A-Z</option>
-            <option value="desc">Z-A</option>
-          </select>
-        </div>
-      )}
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full border text-sm">
-          <thead className="bg-gray-100 text-left">
-            <tr>
-              <th className="px-3 py-2 border">Name</th>
-              <th className="px-3 py-2 border">Date Joined</th>
-              <th className="px-3 py-2 border">Opted Plan</th>
-              <th className="px-3 py-2 border">Status</th>
-              <th className="px-3 py-2 border">Gender</th>
-              <th className="px-3 py-2 border">Age</th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* User Table */}
+      <Card className="shadow-sm">
+        <Table className="w-full">
+          <TableHeader className="bg-gray-100">
+            <TableRow>
+              <TableHead className="w-2/12">Name</TableHead>
+              <TableHead className="w-2/12 hidden md:table-cell">Date Joined</TableHead>
+              <TableHead className="w-2/12 hidden sm:table-cell">Opted Plan</TableHead>
+              <TableHead className="w-2/12 hidden lg:table-cell">Status</TableHead>
+              <TableHead className="w-2/12 hidden sm:table-cell">Gender</TableHead>
+              <TableHead className="w-1/12 text-center hidden md:table-cell">Age</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {currentUsers.length > 0 ? (
               currentUsers.map((u) => (
-                <tr key={u.user_id} className="border-t hover:bg-gray-50">
-                  <td className="px-3 py-2">{u.name}</td>
-                  <td className="px-3 py-2">
-                    {u.date_joined
-                      ? new Date(u.date_joined).toLocaleDateString()
-                      : "-"}
-                  </td>
-                  <td className="px-3 py-2">{u.opted_plan}</td>
-                  <td className="px-3 py-2">{u.status}</td>
-                  <td className="px-3 py-2">{u.gender}</td>
-                  <td className="px-3 py-2">{u.age}</td>
-                </tr>
+                <TableRow key={u.user_id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <TableCell className="font-medium">{u.name}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {u.date_joined ? new Date(u.date_joined).toLocaleDateString() : "-"}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <Badge variant="secondary">{u.opted_plan}</Badge>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <Badge variant={u.status === "Active" ? "default" : "secondary"}>{u.status}</Badge>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">{u.gender}</TableCell>
+                  <TableCell className="text-center hidden md:table-cell">{u.age}</TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan={6} className="text-center py-3">
-                  No users found.
-                </td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-gray-500">
+                  No users found matching your criteria.
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Pagination */}
-      <div className="flex justify-center items-center gap-4 pt-4">
-        <Button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((prev) => prev - 1)}
-          variant="outline"
-        >
-          Prev
-        </Button>
-        <span className="text-sm">
-          Page {currentPage} of {totalPages}
-        </span>
-        <Button
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((prev) => prev + 1)}
-          variant="outline"
-        >
-          Next
-        </Button>
+      <div className="flex justify-between items-center gap-4 mt-6">
+        <div className="text-sm text-gray-500">
+          Showing {filteredUsers.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} results
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((prev) => prev - 1)}
+            variant="outline"
+            size="sm"
+          >
+            Prev
+          </Button>
+          <span className="text-sm text-gray-700">
+            Page {totalPages > 0 ? currentPage : 0} of {totalPages}
+          </span>
+          <Button
+            disabled={currentPage === totalPages || totalPages === 0}
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+            variant="outline"
+            size="sm"
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );

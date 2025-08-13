@@ -125,7 +125,7 @@ export default function Register() {
             <div className="flex justify-center mb-2">
               <img src="/logo2.png" alt="SmartFlex Logo" className="h-10" />
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-800">
+            <CardTitle className="text-2xl font-boldd text-gray-800">
               Create Your Account
             </CardTitle>
             <CardDescription className="text-muted-foreground text-sm">

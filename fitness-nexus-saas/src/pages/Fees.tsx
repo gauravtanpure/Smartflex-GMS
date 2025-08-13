@@ -71,17 +71,17 @@ export default function Fees() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-extrabold text-logoOrange">My Fees</h1>
+          <h1 className="text-4xl font-boldd text-logoOrange">My Fees</h1>
           <p className="text-lg text-muted-foreground">Manage your gym payments and view your financial history.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
           <Card className="p-3 shadow-sm rounded-lg flex items-center space-x-2 bg-white border-yellow-200">
             <Wallet className="w-5 h-5 text-yellow-600" />
-            <span className="text-sm font-semibold text-gray-700">Outstanding: <span className="text-lg font-bold text-yellow-700">₹{totalOutstandingFees.toLocaleString()}</span></span>
+            <span className="text-sm font-semibold text-gray-700">Outstanding: <span className="text-lg font-boldd text-yellow-700">₹{totalOutstandingFees.toLocaleString()}</span></span>
           </Card>
           <Card className="p-3 shadow-sm rounded-lg flex items-center space-x-2 bg-white border-green-200">
             <Banknote className="w-5 h-5 text-green-600" />
-            <span className="text-sm font-semibold text-gray-700">Total Paid: <span className="text-lg font-bold text-green-700">₹{totalPaidFees.toLocaleString()}</span></span>
+            <span className="text-sm font-semibold text-gray-700">Total Paid: <span className="text-lg font-boldd text-green-700">₹{totalPaidFees.toLocaleString()}</span></span>
           </Card>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function Fees() {
       {/* Main Fees Card */}
       <Card className="rounded-xl shadow-lg border border-gray-100 animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
         <CardHeader className="pb-4 border-b">
-          <CardTitle className="text-2xl font-bold flex items-center space-x-3" style={{ color: "#6b7e86" }}>
+          <CardTitle className="text-2xl font-boldd flex items-center space-x-3" style={{ color: "#6b7e86" }}>
             <DollarSign className="w-6 h-6 text-indigo-600" />
             <span className="text-logoOrange">Fee Details</span>
           </CardTitle>
@@ -173,7 +173,7 @@ export default function Fees() {
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-[425px] rounded-lg shadow-xl animate-in zoom-in-95 ease-out duration-300">
                             <DialogHeader>
-                              <DialogTitle className="text-2xl font-bold text-gray-800">{f.fee_type}</DialogTitle>
+                              <DialogTitle className="text-2xl font-boldd text-gray-800">{f.fee_type}</DialogTitle>
                               <DialogDescription className="text-sm text-gray-500">
                                 Detailed information about this fee record.
                               </DialogDescription>
@@ -182,7 +182,7 @@ export default function Fees() {
                             <div className="grid gap-4 py-4">
                               <div className="grid grid-cols-3 items-center gap-4">
                                 <span className="text-sm font-medium text-gray-600">Amount:</span>
-                                <span className="col-span-2 text-lg font-bold text-gray-900">₹{f.amount.toLocaleString()}</span>
+                                <span className="col-span-2 text-lg font-boldd text-gray-900">₹{f.amount.toLocaleString()}</span>
                               </div>
                               <div className="grid grid-cols-3 items-center gap-4">
                                 <span className="text-sm font-medium text-gray-600">Due Date:</span>

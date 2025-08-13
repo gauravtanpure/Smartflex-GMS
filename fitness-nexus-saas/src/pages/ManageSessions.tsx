@@ -394,7 +394,7 @@ const ManageSessions: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4" font-poppins>
-      <h1 className="text-3xl font-bold mb-6 text-logoOrange">Manage Sessions</h1>
+      <h1 className="text-3xl font-boldd mb-6 text-logoOrange">Manage Sessions</h1>
 
       {/* Create New Session Card */}
       <Card className="mb-8">

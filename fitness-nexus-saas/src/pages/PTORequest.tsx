@@ -11,7 +11,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; // Keeping Input for consistency, though not directly used in the form
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,13 +24,26 @@ import {
 } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CalendarIcon, Loader2, Info } from "lucide-react"; // Added Loader2 and Info icons
+import { cn } from "@/lib/utils"; // cn utility for conditional class names
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const fetchMyPTORequests = async () => {
+// Define interface for PTO request data
+interface PTORequestData {
+  id: number;
+  start_date: string;
+  end_date: string;
+  reason?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
+const fetchMyPTORequests = async (): Promise<PTORequestData[]> => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
   const response = await fetch(`${API_URL}/trainers/my-pto-requests`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -42,8 +55,11 @@ const fetchMyPTORequests = async () => {
   return response.json();
 };
 
-const createPTORequest = async (newRequest) => {
+const createPTORequest = async (newRequest: { start_date: string; end_date: string; reason: string }) => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
   const response = await fetch(`${API_URL}/trainers/pto-request`, {
     method: "POST",
     headers: {
@@ -53,7 +69,8 @@ const createPTORequest = async (newRequest) => {
     body: JSON.stringify(newRequest),
   });
   if (!response.ok) {
-    throw new Error("Failed to create PTO request");
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "Failed to create PTO request");
   }
   return response.json();
 };
@@ -69,7 +86,7 @@ const PTORequest = () => {
     data: ptoRequests,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<PTORequestData[]>({
     queryKey: ["myPTORequests"],
     queryFn: fetchMyPTORequests,
   });
@@ -81,6 +98,7 @@ const PTORequest = () => {
       toast({
         title: "PTO Request Submitted",
         description: "Your PTO request has been successfully submitted for approval.",
+        className: "bg-green-100 text-green-800", // Custom class for success toast
       });
       setStartDate(undefined);
       setEndDate(undefined);
@@ -95,7 +113,7 @@ const PTORequest = () => {
     },
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!startDate || !endDate) {
       toast({
@@ -113,10 +131,13 @@ const PTORequest = () => {
       });
       return;
     }
-    if (!isFuture(startDate)) {
+    // Check if startDate is in the future relative to the start of today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+    if (startDate < today) {
       toast({
         title: "Validation Error",
-        description: "The start date must be in the future.",
+        description: "The start date must be today or in the future.",
         variant: "destructive",
       });
       return;
@@ -130,131 +151,170 @@ const PTORequest = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-logoOrange">Request Paid Time Off</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-logoOrange">Submit a New Request</CardTitle>
-          <CardDescription>
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen font-poppins">
+      <h1 className="text-3xl sm:text-4xl font-boldd text-logoOrange mb-6">Request Paid Time Off</h1>
+
+      {/* Submit New Request Card */}
+      <Card className="mb-8 rounded-lg shadow-md border-gray-100">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-boldd text-logoOrange">Submit a New Request</CardTitle>
+          <CardDescription className="text-md text-muted-foreground">
             Fill out the form below to request time off from work.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
+                <Label htmlFor="startDate" className="text-base">Start Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal text-base h-11",
                         !startDate && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-5 w-5" />
                       {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 z-50">
                     <Calendar
                       mode="single"
                       selected={startDate}
                       onSelect={setStartDate}
                       initialFocus
-                      disabled={(date) => date < new Date() || date > new Date("2026-01-01")}
+                      // Disable past dates and dates beyond a reasonable future (e.g., 1 year from now)
+                      disabled={(date) => date < new Date().setHours(0,0,0,0) || date > new Date(new Date().setFullYear(new Date().getFullYear() + 1))}
                     />
                   </PopoverContent>
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
+                <Label htmlFor="endDate" className="text-base">End Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal text-base h-11",
                         !endDate && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-5 w-5" />
                       {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 z-50">
                     <Calendar
                       mode="single"
                       selected={endDate}
                       onSelect={setEndDate}
                       initialFocus
-                      disabled={(date) => date < new Date() || date > new Date("2026-01-01")}
+                      // Disable past dates and dates beyond a reasonable future (e.g., 1 year from now)
+                      disabled={(date) => date < new Date().setHours(0,0,0,0) || date > new Date(new Date().setFullYear(new Date().getFullYear() + 1))}
                     />
                   </PopoverContent>
                 </Popover>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason (Optional)</Label>
+              <Label htmlFor="reason" className="text-base">Reason (Optional)</Label>
               <Textarea
                 id="reason"
                 placeholder="Enter reason for your leave..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
+                className="min-h-[100px] text-base"
               />
             </div>
-            <Button type="submit" disabled={createRequestMutation.isPending}>
-              {createRequestMutation.isPending ? "Submitting..." : "Submit Request"}
+            <Button
+              type="submit"
+              disabled={createRequestMutation.isPending}
+              className="w-full sm:w-auto px-6 py-3 text-lg font-semibold bg-logoOrange hover:bg-orange-600 transition-colors"
+            >
+              {createRequestMutation.isPending ? (
+                <span className="flex items-center">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting...
+                </span>
+              ) : (
+                "Submit Request"
+              )}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>My PTO Request History</CardTitle>
+      {/* PTO Request History Card */}
+      <Card className="rounded-lg shadow-md border-gray-100">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-boldd text-gray-800">My PTO Request History</CardTitle>
+          <CardDescription className="text-md text-muted-foreground">
+            A list of all your submitted time off requests and their current status.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading && <p>Loading requests...</p>}
-          {error && <p className="text-red-500">Error: {error.message}</p>}
-          {ptoRequests && ptoRequests.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Requested On</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ptoRequests.map((req) => (
-                  <TableRow key={req.id}>
-                    <TableCell>{format(new Date(req.start_date), "PPP")}</TableCell>
-                    <TableCell>{format(new Date(req.end_date), "PPP")}</TableCell>
-                    <TableCell>{req.reason || "N/A"}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`font-semibold ${
-                          req.status === "approved"
-                            ? "text-green-600"
-                            : req.status === "rejected"
-                            ? "text-red-600"
-                            : "text-yellow-600"
-                        }`}
-                      >
-                        {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{format(new Date(req.created_at), "PPP")}</TableCell>
+          {isLoading && (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-10 w-10 animate-spin text-logoOrange" />
+              <p className="ml-4 text-lg text-gray-600">Loading requests...</p>
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-8 border border-dashed rounded-lg text-red-600 bg-red-50">
+              <Info className="w-12 h-12 text-red-400 mx-auto mb-4" />
+              <p className="text-lg font-medium">Error loading PTO requests:</p>
+              <p className="mt-2 text-sm">{error.message}</p>
+              <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["myPTORequests"] })} className="mt-4 bg-red-500 hover:bg-red-600">
+                Retry Fetching
+              </Button>
+            </div>
+          )}
+          {!isLoading && !error && ptoRequests && ptoRequests.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table className="min-w-full text-base">
+                <TableHeader className="bg-gray-100">
+                  <TableRow>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">Start Date</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">End Date</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700 hidden sm:table-cell">Reason</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">Status</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700 hidden md:table-cell">Requested On</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p>You have not submitted any PTO requests yet.</p>
+                </TableHeader>
+                <TableBody>
+                  {ptoRequests.map((req) => (
+                    <TableRow key={req.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                      <TableCell className="py-3 px-4">{format(new Date(req.start_date), "PPP")}</TableCell>
+                      <TableCell className="py-3 px-4">{format(new Date(req.end_date), "PPP")}</TableCell>
+                      <TableCell className="py-3 px-4 text-muted-foreground hidden sm:table-cell">{req.reason || "N/A"}</TableCell>
+                      <TableCell className="py-3 px-4">
+                        <span
+                          className={`font-semibold px-2 py-1 rounded-full text-xs sm:text-sm
+                            ${req.status === "approved"
+                              ? "bg-green-100 text-green-700"
+                              : req.status === "rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                            }`}
+                        >
+                          {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-muted-foreground hidden md:table-cell">{format(new Date(req.created_at), "PPP")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : !isLoading && !error && ptoRequests?.length === 0 && (
+            <div className="text-center py-8 border border-dashed rounded-lg text-gray-500 bg-gray-50">
+              <Info className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-lg font-medium">You have not submitted any PTO requests yet.</p>
+              <p className="text-sm mt-2">Submit a new request using the form above!</p>
+            </div>
           )}
         </CardContent>
       </Card>

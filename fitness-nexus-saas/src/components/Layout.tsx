@@ -13,23 +13,25 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar 
+      <Sidebar
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
-      <Header 
-        sidebarCollapsed={sidebarCollapsed} 
+      <Header
+        sidebarCollapsed={sidebarCollapsed}
         onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)}
       />
-      
+
       {/* Main Content */}
-      <main className={cn(
-        "pt-20 transition-all duration-300",
-        // Desktop margins, mobile full width
-        "lg:ml-64",
-        sidebarCollapsed && "lg:ml-16"
-      )}>
-        <div className="p-4 lg:p-6">
+      <main
+        className={cn(
+          "transition-all duration-300",
+          // Desktop margins, mobile full width
+          "lg:ml-64",
+          sidebarCollapsed && "lg:ml-16"
+        )}
+      >
+        <div className="pt-14">
           {children}
         </div>
       </main>

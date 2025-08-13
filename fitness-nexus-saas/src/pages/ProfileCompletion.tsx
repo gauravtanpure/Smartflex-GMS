@@ -666,7 +666,7 @@ export default function ProfileCompletion() {
 
   return (
     <div className="p-6 space-y-8 max-w-4xl mx-auto font-poppins">
-      <h1 className="text-4xl font-extrabold text-center text-primary mb-8">Complete Your Profile</h1>
+      <h1 className="text-4xl font-boldd text-center text-primary mb-8">Complete Your Profile</h1>
       <Card className="shadow-lg text-center">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-primary">Profile Photo</CardTitle>

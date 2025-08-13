@@ -43,7 +43,7 @@ export function FeeSummaryCard({ title, amount, type, className }: FeeSummaryCar
               isPaid ? "text-primary-foreground" : "text-accent-foreground"
             )} />
             <span className={cn(
-              "text-2xl sm:text-3xl font-bold",
+              "text-2xl sm:text-3xl font-boldd",
               isPaid ? "text-primary-foreground" : "text-accent-foreground"
             )}>
               {amount.toLocaleString()}

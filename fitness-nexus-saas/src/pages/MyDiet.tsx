@@ -48,7 +48,7 @@ export default function MyDiet() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-poppins">
-      <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-left text-logoOrange">My Diet Plans</h2>
+      <h2 className="text-3xl font-boldd text-gray-800 mb-6 text-left text-logoOrange">My Diet Plans</h2>
       {dietPlans.length === 0 ? (
         <p className="text-gray-600 text-center text-lg text-logoOrange">No diet plans assigned to you yet. Check back later!</p>
       ) : (
@@ -62,7 +62,7 @@ export default function MyDiet() {
             >
               <div>
                 {/* Changed text-primary to text-logoOrange */}
-                <h3 className="text-2xl font-bold text-logoOrange mb-3 leading-tight">{plan.title}</h3>
+                <h3 className="text-2xl font-boldd text-logoOrange mb-3 leading-tight">{plan.title}</h3>
                 <p className="text-sm text-gray-500 mb-4 border-b pb-3 border-gray-100">
                   Assigned by: <span className="font-semibold text-gray-700">{plan.assigned_by_trainer?.name || 'N/A'}</span> (<span className="text-gray-500">{plan.assigned_by_trainer?.email || 'N/A'}</span>)
                 </p>

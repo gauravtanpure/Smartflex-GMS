@@ -198,14 +198,14 @@ export default function Attendance() {
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen font-poppins">
+    <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen font-poppins">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-extrabold text-logoOrange mb-2">My Attendance</h1>
-          <p className="text-lg text-muted-foreground">Track your gym check-ins and session consistency.</p>
+          <h1 className="text-3xl sm:text-4xl font-boldd text-logoOrange mb-2">My Attendance</h1>
+          <p className="text-base sm:text-lg text-muted-foreground">Track your gym check-ins and session consistency.</p>
         </div>
-        <Badge variant="outline" className="mt-4 sm:mt-0 px-4 py-2 text-md font-semibold flex items-center space-x-2 bg-white shadow-sm border-gray-200">
+        <Badge variant="outline" className="mt-4 sm:mt-0 px-4 py-2 text-sm sm:text-md font-semibold flex items-center space-x-2 bg-white shadow-sm border-gray-200">
           <TrendingUp className="w-4 h-4 text-logoOrange" />
           <span>Overall Consistency: <span className="text-logoOrange">{attendancePercentage}%</span></span>
         </Badge>
@@ -247,7 +247,7 @@ export default function Attendance() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-success">{presentDays}</div>
+              <div className="text-4xl font-boldd text-success">{presentDays}</div>
               <p className="text-sm text-muted-foreground">out of {totalDays} general records</p>
             </CardContent>
           </Card>
@@ -260,7 +260,7 @@ export default function Attendance() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-destructive">{totalDays - presentDays}</div>
+              <div className="text-4xl font-boldd text-destructive">{totalDays - presentDays}</div>
               <p className="text-sm text-muted-foreground">missed general check-ins</p>
             </CardContent>
           </Card>
@@ -273,7 +273,7 @@ export default function Attendance() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-logoOrange">{attendancePercentage}%</div>
+              <div className="text-4xl font-boldd text-logoOrange">{attendancePercentage}%</div>
               <Progress value={attendancePercentage} className="mt-2 h-2 [&>*]:bg-logoOrange" />
               <p className="text-xs text-muted-foreground mt-1">Based on general gym visits.</p>
             </CardContent>
@@ -286,8 +286,8 @@ export default function Attendance() {
       {/* General Attendance Calendar */}
       <Card className="rounded-xl shadow-md mb-8">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between mb-4">
-            <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800">
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
+            <CardTitle className="text-xl sm:text-2xl font-boldd flex items-center space-x-3 text-gray-800 mb-4 sm:mb-0">
               <Clock className="w-6 h-6 text-gray-600" />
               <span>General Gym Attendance</span>
             </CardTitle>
@@ -386,7 +386,7 @@ export default function Attendance() {
       {/* Session Attendance List */}
       <Card className="rounded-xl shadow-md mb-8">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800">
+          <CardTitle className="text-xl sm:text-2xl font-boldd flex items-center space-x-3 text-gray-800">
             <Users className="w-6 h-6 text-gray-600" />
             <span>Session Attendance History</span>
           </CardTitle>
@@ -416,9 +416,9 @@ export default function Attendance() {
           ) : (
             <div className="space-y-4">
               {sessionAttendance.map((record) => (
-                <div key={`session-${record.id}`} className="flex items-center justify-between p-4 rounded-lg border bg-white shadow-sm hover:bg-gray-50 transition-colors duration-200 ease-in-out">
+                <div key={`session-${record.id}`} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg border bg-white shadow-sm hover:bg-gray-50 transition-colors duration-200 ease-in-out">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold ${
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-boldd ${
                       record.status === "present"
                         ? "bg-purple-600/80"
                         : "bg-rose-600/80"
@@ -444,7 +444,7 @@ export default function Attendance() {
                       </div>
                     </div>
                   </div>
-                  <Badge variant={record.status === "present" ? "default" : "destructive"} className="px-3 py-1 text-base font-semibold">
+                  <Badge variant={record.status === "present" ? "default" : "destructive"} className="mt-4 sm:mt-0 px-3 py-1 text-base font-semibold">
                     {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                   </Badge>
                 </div>
@@ -459,7 +459,7 @@ export default function Attendance() {
       {/* Weekly Goals */}
       <Card className="rounded-xl shadow-md">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold flex items-center space-x-3 text-gray-800">
+          <CardTitle className="text-xl sm:text-2xl font-boldd flex items-center space-x-3 text-gray-800">
             <TrendingUp className="w-6 h-6 text-gray-600" />
             <span>Weekly Goals</span>
           </CardTitle>
@@ -469,14 +469,14 @@ export default function Attendance() {
             <div>
               <div className="flex justify-between items-center text-base mb-2 font-medium text-gray-700">
                 <span>Workout Days (Goal: 5 days/week)</span>
-                <span><span className="text-logoOrange font-bold">{Math.min(presentDays, 5)}</span>/5 days</span>
+                <span><span className="text-logoOrange font-boldd">{Math.min(presentDays, 5)}</span>/5 days</span>
               </div>
               <Progress value={Math.min((presentDays / 5) * 100, 100)} className="h-3 bg-gray-200 [&>*]:bg-logoOrange" />
             </div>
             <div>
               <div className="flex justify-between items-center text-base mb-2 font-medium text-gray-700">
                 <span>General Consistency Rate (Goal: 80%)</span>
-                <span><span className="text-logoOrange font-bold">{attendancePercentage}</span>%</span>
+                <span><span className="text-logoOrange font-boldd">{attendancePercentage}</span>%</span>
               </div>
               <Progress value={Math.min(attendancePercentage, 100)} className="h-3 bg-gray-200 [&>*]:bg-logoOrange" />
             </div>

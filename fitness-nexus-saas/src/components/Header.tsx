@@ -125,7 +125,7 @@ const handleNotificationClick = async (notification: Notification) => {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg lg:text-xl font-semibold" style={{ color: "#3f545eff" }}>
+          <h1 className="text-lg lg:text-xl font-semibold text-logoOrange !p-0 !m-0">
             SmartFlex Fitness
           </h1>
 

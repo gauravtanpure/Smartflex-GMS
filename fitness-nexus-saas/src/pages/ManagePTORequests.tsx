@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Check, X } from "lucide-react";
+import { Check, X, Loader2, Info } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,8 +35,24 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const fetchAllPTORequests = async () => {
+interface TrainerUser {
+  name: string;
+}
+
+interface PTORequest {
+  id: number;
+  trainer_user: TrainerUser;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+const fetchAllPTORequests = async (): Promise<PTORequest[]> => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
   const response = await fetch(`${API_URL}/trainers/pto-requests`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -48,8 +64,11 @@ const fetchAllPTORequests = async () => {
   return response.json();
 };
 
-const approvePTORequest = async (requestId) => {
+const approvePTORequest = async (requestId: number) => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
   const response = await fetch(`${API_URL}/trainers/pto-request/${requestId}/approve`, {
     method: "PUT",
     headers: {
@@ -57,13 +76,17 @@ const approvePTORequest = async (requestId) => {
     },
   });
   if (!response.ok) {
-    throw new Error("Failed to approve PTO request.");
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "Failed to approve PTO request.");
   }
   return response.json();
 };
 
-const rejectPTORequest = async (requestId) => {
+const rejectPTORequest = async (requestId: number) => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
   const response = await fetch(`${API_URL}/trainers/pto-request/${requestId}/reject`, {
     method: "PUT",
     headers: {
@@ -71,7 +94,8 @@ const rejectPTORequest = async (requestId) => {
     },
   });
   if (!response.ok) {
-    throw new Error("Failed to reject PTO request.");
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "Failed to reject PTO request.");
   }
   return response.json();
 };
@@ -84,7 +108,7 @@ const ManagePTORequests = () => {
     data: ptoRequests,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<PTORequest[]>({
     queryKey: ["allPTORequests"],
     queryFn: fetchAllPTORequests,
   });
@@ -96,6 +120,7 @@ const ManagePTORequests = () => {
       toast({
         title: "Request Approved",
         description: "PTO request has been successfully approved.",
+        className: "bg-green-100 text-green-800",
       });
     },
     onError: (err: any) => {
@@ -114,6 +139,7 @@ const ManagePTORequests = () => {
       toast({
         title: "Request Rejected",
         description: "PTO request has been successfully rejected.",
+        variant: "destructive",
       });
     },
     onError: (err: any) => {
@@ -125,62 +151,67 @@ const ManagePTORequests = () => {
     },
   });
 
-  const handleApprove = (id) => {
+  const handleApprove = (id: number) => {
     approveMutation.mutate(id);
   };
 
-  const handleReject = (id) => {
+  const handleReject = (id: number) => {
     rejectMutation.mutate(id);
   };
 
+  const pendingRequests = ptoRequests?.filter(req => req.status === 'pending');
+  const otherRequests = ptoRequests?.filter(req => req.status !== 'pending');
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-logoOrange">Manage PTO Requests</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-logoOrange">Pending & Past Requests</CardTitle>
-          <CardDescription>
-            Review all paid time off requests from trainers in your branch.
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen font-poppins">
+      <h1 className="text-3xl sm:text-3xl font-boldd text-logoOrange mb-6">Manage PTO Requests</h1>
+
+      {/* Pending Requests */}
+      <Card className="mb-8 rounded-lg shadow-md border-gray-100">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-boldd text-gray-800">Pending Requests</CardTitle>
+          <CardDescription className="text-md text-muted-foreground">
+            Review and take action on new paid time off requests.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading && <p>Loading requests...</p>}
-          {error && <p className="text-red-500">Error: {error.message}</p>}
-          {ptoRequests && ptoRequests.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Trainer</TableHead>
-                  <TableHead>Dates</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ptoRequests.map((req) => (
-                  <TableRow key={req.id}>
-                    <TableCell>{req.trainer?.name || "N/A"}</TableCell>
-                    <TableCell>
-                      {format(new Date(req.start_date), "PPP")} -{" "}
-                      {format(new Date(req.end_date), "PPP")}
-                    </TableCell>
-                    <TableCell>{req.reason || "N/A"}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          req.status === "approved"
-                            ? "green"
-                            : req.status === "rejected"
-                            ? "red"
-                            : "yellow"
-                        }
-                      >
-                        {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {req.status === "pending" ? (
+          {isLoading && (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-10 w-10 animate-spin text-logoOrange" />
+              <p className="ml-4 text-lg text-gray-600">Loading requests...</p>
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-8 border border-dashed rounded-lg text-red-600 bg-red-50">
+              <Info className="w-12 h-12 text-red-400 mx-auto mb-4" />
+              <p className="text-lg font-medium">Error loading PTO requests:</p>
+              <p className="mt-2 text-sm">{error.message}</p>
+              <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["allPTORequests"] })} className="mt-4 bg-red-500 hover:bg-red-600">
+                Retry Fetching
+              </Button>
+            </div>
+          )}
+          {!isLoading && !error && pendingRequests && pendingRequests.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table className="min-w-full text-base">
+                <TableHeader className="bg-gray-100">
+                  <TableRow>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">Trainer</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700 hidden sm:table-cell">Dates</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700 hidden lg:table-cell">Reason</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingRequests.map((req) => (
+                    <TableRow key={req.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                      <TableCell className="py-3 px-4 font-medium">{req.trainer?.name || "N/A"}</TableCell>
+                      <TableCell className="py-3 px-4 hidden sm:table-cell">
+                        {format(new Date(req.start_date), "PPP")} -{" "}
+                        {format(new Date(req.end_date), "PPP")}
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-muted-foreground hidden lg:table-cell">{req.reason || "N/A"}</TableCell>
+                      <TableCell className="py-3 px-4">
                         <div className="flex space-x-2">
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -188,7 +219,7 @@ const ManagePTORequests = () => {
                                 <Check className="h-4 w-4 text-green-600" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="sm:max-w-[425px]">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Approve PTO Request?</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -207,7 +238,7 @@ const ManagePTORequests = () => {
                                 <X className="h-4 w-4 text-red-600" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="sm:max-w-[425px]">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Reject PTO Request?</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -221,16 +252,74 @@ const ManagePTORequests = () => {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">No action needed</span>
-                      )}
-                    </TableCell>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : !isLoading && !error && pendingRequests?.length === 0 && (
+            <div className="text-center py-8 border border-dashed rounded-lg text-gray-500 bg-gray-50">
+              <Info className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-lg font-medium">No pending PTO requests at this time.</p>
+              <p className="text-sm mt-2">All requests have been reviewed.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* All Requests History */}
+      <Card className="rounded-lg shadow-md border-gray-100">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-boldd text-gray-800">Request History</CardTitle>
+          <CardDescription className="text-md text-muted-foreground">
+            View all past approved and rejected requests.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!isLoading && !error && otherRequests && otherRequests.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table className="min-w-full text-base">
+                <TableHeader className="bg-gray-100">
+                  <TableRow>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">Trainer</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700 hidden sm:table-cell">Dates</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700 hidden lg:table-cell">Reason</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p>No PTO requests found for your branch.</p>
+                </TableHeader>
+                <TableBody>
+                  {otherRequests.map((req) => (
+                    <TableRow key={req.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                      <TableCell className="py-3 px-4 font-medium">{req.trainer?.name || "N/A"}</TableCell>
+                      <TableCell className="py-3 px-4 hidden sm:table-cell">
+                        {format(new Date(req.start_date), "PPP")} -{" "}
+                        {format(new Date(req.end_date), "PPP")}
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-muted-foreground hidden lg:table-cell">{req.reason || "N/A"}</TableCell>
+                      <TableCell className="py-3 px-4">
+                        <Badge
+                          variant={
+                            req.status === "approved"
+                              ? "default"
+                              : "destructive"
+                          }
+                          className="px-2 py-1 text-xs sm:text-sm"
+                        >
+                          {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : !isLoading && !error && otherRequests?.length === 0 && (
+            <div className="text-center py-8 border border-dashed rounded-lg text-gray-500 bg-gray-50">
+              <Info className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-lg font-medium">No past requests found.</p>
+              <p className="text-sm mt-2">History will appear here once requests are approved or rejected.</p>
+            </div>
           )}
         </CardContent>
       </Card>

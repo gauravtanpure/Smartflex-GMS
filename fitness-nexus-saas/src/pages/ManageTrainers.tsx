@@ -182,7 +182,7 @@ export default function ManageTrainers() {
   return (
     <div className="space-y-6 p-4" font-poppins>
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-logoOrange">Manage Trainers</h1>
+        <h1 className="text-3xl font-boldd text-logoOrange">Manage Trainers</h1>
         <Button onClick={() => setDialogOpen(true)}>Add Trainer</Button>
       </div>
 
@@ -218,7 +218,7 @@ export default function ManageTrainers() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-lg p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
+            <DialogTitle className="text-xl font-boldd">
               {editTrainerId ? "Edit Trainer" : "Add New Trainer"}
             </DialogTitle>
             <DialogDescription>

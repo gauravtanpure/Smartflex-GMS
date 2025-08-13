@@ -196,7 +196,7 @@ export default function ManageBranches() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-foreground text-logoOrange">Manage Branches</h1>
+      <h1 className="text-3xl font-boldd text-foreground text-logoOrange">Manage Branches</h1>
 
       {loading ? (
         <p>Loading branches and admins...</p>
@@ -237,7 +237,7 @@ export default function ManageBranches() {
 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
   <DialogContent className="w-full max-w-xl max-h-[90vh] overflow-y-auto sm:rounded-lg p-6">
     <DialogHeader>
-      <DialogTitle className="text-xl font-bold">
+      <DialogTitle className="text-xl font-boldd">
         Admins of {selectedBranch?.name}
       </DialogTitle>
     </DialogHeader>

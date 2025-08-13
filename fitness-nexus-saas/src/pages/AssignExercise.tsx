@@ -170,7 +170,7 @@ export default function AssignExercise() {
 
   return (
     <div className="p-6" font-poppins>
-      <h2 className="text-3xl font-bold mb-4 text-logoOrange">Assign Exercise Plan</h2>
+      <h2 className="text-3xl font-boldd mb-4 text-logoOrange">Assign Exercise Plan</h2>
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4 mb-8">
         <div>
           <label htmlFor="user_id" className="block text-sm font-medium text-gray-700">Select User:</label>
@@ -235,7 +235,7 @@ export default function AssignExercise() {
         </button>
       </form>
 
-      <h2 className="text-2xl font-bold mb-4" style={{ color: "#6b7e86" }}>Assigned Exercise Plans</h2>
+      <h2 className="text-2xl font-boldd mb-4" style={{ color: "#6b7e86" }}>Assigned Exercise Plans</h2>
       {assignedExercisePlans.length === 0 ? (
         <p className="text-gray-600">No exercise plans assigned by you yet.</p>
       ) : (

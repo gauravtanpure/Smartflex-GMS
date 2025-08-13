@@ -526,7 +526,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate text-gray-800" style={{ fontFamily: "Montserrat, sans-serif" }}>{username || "User"}</p>
+                <p className="text-sm font-boldd truncate text-gray-800" style={{ fontFamily: "Montserrat, sans-serif" }}>{username || "User"}</p>
                 <p className="text-xs text-gray-500" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     {isSuperAdmin ? "Super Admin" : isAdmin ? `Admin (${branch || 'No Branch'})` : isTrainer ? `Trainer (${branch || 'No Branch'})` : `Member (${profileCompletion || '0'}%)`}
                 </p>

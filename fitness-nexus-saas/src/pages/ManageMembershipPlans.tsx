@@ -226,7 +226,7 @@ const ManageMembershipPlans = () => {
   return (
     <div className="container mx-auto p-4" font-poppins>
       <div className="flex justify-between items-center mb-6" >
-        <h1 className="text-3xl font-bold text-logoOrange">Manage Membership Plans</h1>
+        <h1 className="text-3xl font-boldd text-logoOrange">Manage Membership Plans</h1>
         {(userRole === "admin" || userRole === "superadmin") && (
           <Button onClick={() => setIsCreateDialogOpen(true)}>Create New Plan</Button>
         )}
