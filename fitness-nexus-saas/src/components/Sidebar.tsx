@@ -361,6 +361,34 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                   </span>
                 )}
               </NavLink>
+
+              {isAdmin || isTrainer && (
+                <NavLink
+                  to="/user-attendance"
+                  onClick={onMobileClose}
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                    location.pathname === "/user-attendance"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  <UserCheck
+                    className={cn(
+                      "w-5 h-5 flex-shrink-0",
+                      location.pathname === "/user-attendance"
+                        ? "text-primary-foreground"
+                        : "text-gray-500 group-hover:text-gray-700"
+                    )}
+                  />
+                  {!collapsed && (
+                    <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                      User Attendance
+                    </span>
+                  )}
+                </NavLink>
+              )}
+
               <NavLink
                 to="/trainer/sessions"
                 onClick={onMobileClose}

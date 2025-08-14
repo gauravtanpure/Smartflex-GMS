@@ -140,8 +140,7 @@ def get_users_by_branch(
     users = db.query(models.User).filter(models.User.branch == user_branch).all()
     return users
 
-
-@router.get("/branch-attendance", response_model=List[schemas.UserAttendanceResponse])
+@router.get("/branch-attendance", response_model=List[schemas.UserAttendanceResponseFace])
 def get_attendance_by_branch(
     db: Session = Depends(database.get_db),
     current_trainer: schemas.UserResponse = Depends(get_current_trainer),
@@ -154,12 +153,23 @@ def get_attendance_by_branch(
             detail="Trainer's branch not specified.",
         )
 
-    query = db.query(models.UserAttendance).filter(models.UserAttendance.branch == trainer_branch)
+    query = (
+        db.query(
+            models.UserAttendance.id,
+            models.UserAttendance.user_id,
+            models.User.name.label("user_name"),
+            models.UserAttendance.date,
+            models.UserAttendance.status,
+            models.UserAttendance.branch
+        )
+        .join(models.User, models.UserAttendance.user_id == models.User.id)
+        .filter(models.UserAttendance.branch == trainer_branch)
+    )
+
     if attendance_date:
         query = query.filter(models.UserAttendance.date == attendance_date)
 
-    attendance_records = query.all()
-    return attendance_records
+    return query.all()
 
 
 @router.post("/manage-attendance", response_model=schemas.UserAttendanceResponse)

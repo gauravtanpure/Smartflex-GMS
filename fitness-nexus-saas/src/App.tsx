@@ -30,6 +30,7 @@ import ApproveTrainerRevenue from "./pages/ApproveTrainerRevenue";
 import PTORequest from "./pages/PTORequest";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import ManagePTORequests from "./pages/ManagePTORequests";
+import UserAttendance from "./pages/UserAttendance";
 
 
 const queryClient = new QueryClient();
@@ -98,7 +99,7 @@ const App = () => {
           {/* New PTO Routes */}
           <Route path="/trainer/pto-request" element={renderProtectedRoute(PTORequest, ["trainer"])} />
           <Route path="/admin/manage-pto" element={renderProtectedRoute(ManagePTORequests, ["admin"])} />
-
+          <Route path="/user-attendance" element={renderProtectedRoute(UserAttendance, ["trainer", "admin", "superadmin"])} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>

@@ -86,3 +86,4 @@ def get_current_user(
         detail="Could not find user or trainer for authenticated token",
         headers={"WWW-Authenticate": "Bearer"},
     )
+

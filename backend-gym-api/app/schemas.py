@@ -90,6 +90,18 @@ class UserAttendanceResponse(BaseModel):
     class Config:
         from_attributes = True # Changed from orm_mode = True
 
+class UserAttendanceResponseFace(BaseModel):
+    id: int
+    user_id: int
+    user_name: str
+    date: date
+    status: str
+    branch: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
 # --- Schemas for Session Schedule ---
 class SessionScheduleCreate(BaseModel):
     session_name: str
@@ -359,3 +371,4 @@ class PTORequestResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
