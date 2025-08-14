@@ -2,7 +2,7 @@
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Time
 from sqlalchemy.orm import relationship
 from .database import Base
-from sqlalchemy import Boolean, DateTime, func # Keep these imports
+from sqlalchemy import Boolean, DateTime, func, LargeBinary # Keep these imports
 from datetime import datetime
 
 
@@ -17,6 +17,7 @@ class User(Base):
     role = Column(String, default="member")
     gender = Column(String)
     branch = Column(String, nullable=True)
+    face_encoding = Column(LargeBinary, nullable=True)
 
     # Add relationships for diet and exercise plans
     diet_plans = relationship("DietPlan", back_populates="user")

@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from . import models, database
-from .routers import users, auth, trainers, membership_plans, analytics  # ⬅️ Add this
+from .routers import users, auth, trainers, membership_plans, analytics, face_enrollment, face_attendance  # ⬅️ Add this
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -27,3 +27,6 @@ app.include_router(fee_management.router)  # ⬅️ Register router
 app.include_router(membership_plans.router)
 
 app.include_router(analytics.router)
+
+app.include_router(face_enrollment.router)
+app.include_router(face_attendance.router)
