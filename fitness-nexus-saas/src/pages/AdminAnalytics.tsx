@@ -1,68 +1,12 @@
-// import { useEffect, useState } from "react";
-// import { Pie, Bar } from "react-chartjs-2";
-// import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
-// export default function AdminAnalytics() {
-//   const [data, setData] = useState<any>(null);
-
-//   useEffect(() => {
-//     const token = localStorage.getItem("token");
-//     fetch("http://127.0.0.1:8000/analytics/branch-data", {
-//       headers: { Authorization: `Bearer ${token}` }
-//     })
-//       .then(res => res.json())
-//       .then(setData)
-//       .catch(err => console.error(err));
-//   }, []);
-
-//   if (!data) return <p>Loading analytics...</p>;
-
-//   const genderData = {
-//     labels: Object.keys(data.users.by_gender),
-//     datasets: [{ data: Object.values(data.users.by_gender), backgroundColor: ["#36A2EB", "#FF6384", "#FFCE56"] }]
-//   };
-
-//   const specializationData = {
-//     labels: Object.keys(data.trainers.by_specialization),
-//     datasets: [{ data: Object.values(data.trainers.by_specialization), backgroundColor: ["#4BC0C0", "#9966FF", "#FF9F40"] }]
-//   };
-
-//   return (
-//     <div className="p-6 space-y-6">
-//       <h1 className="text-2xl font-boldd">Branch Analytics</h1>
-
-//       <Card>
-//         <CardHeader><CardTitle>Users by Gender</CardTitle></CardHeader>
-//         <CardContent><Pie data={genderData} /></CardContent>
-//       </Card>
-
-//       <Card>
-//         <CardHeader><CardTitle>Trainers by Specialization</CardTitle></CardHeader>
-//         <CardContent><Bar data={specializationData} /></CardContent>
-//       </Card>
-//     </div>
-//   );
-// }
-
-
 // src/pages/AdminAnalytics.tsx
-import { useEffect, useState } from "react";
-import { Pie, Bar, Doughnut } from "react-chartjs-2";
+import { useEffect, useState, useMemo } from "react";
+import { Pie, Bar, Doughnut, Line } from "react-chartjs-2";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -72,7 +16,27 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  LineElement,
+  PointElement,
 } from "chart.js";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge"; 
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 // Register Chart.js components
 ChartJS.register(
@@ -82,79 +46,90 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  LineElement,
+  PointElement
 );
-
-// This is a mock API call. In a real application, you would create a backend endpoint to provide this data.
-const mockFetchAnalyticsData = () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        users: {
-          by_gender: {
-            Male: 45,
-            Female: 55,
-            Other: 2,
-          },
-          plan_status: {
-            Active: 80,
-            Unpaid: 15,
-            Pending: 5,
-          },
-          enrollment_trend: [
-            { month: "Jan", count: 10 },
-            { month: "Feb", count: 15 },
-            { month: "Mar", count: 20 },
-            { month: "Apr", count: 25 },
-            { month: "May", count: 18 },
-            { month: "Jun", count: 22 },
-          ]
-        },
-        trainers: {
-          by_specialization: {
-            "Weight Training": 5,
-            "Cardio": 3,
-            "Yoga": 2,
-            "Pilates": 1,
-          },
-          revenue_status: [
-            { id: 1, name: "Rohan Suryawanshi", is_approved_by_superadmin: true },
-            { id: 2, name: "Shantanu Shinde", is_approved_by_superadmin: false },
-            { id: 3, name: "Prasanna Mendhe", is_approved_by_superadmin: true },
-            { id: 4, name: "Nikhil Pattewar", is_approved_by_superadmin: false },
-          ],
-          pending_pto: [
-            { id: 101, trainer_name: "Rohan Suryawanshi", start_date: "2025-09-01", end_date: "2025-09-05" },
-            { id: 102, trainer_name: "Nikhil Pattewar", start_date: "2025-10-15", end_date: "2025-10-18" },
-          ],
-        },
-      });
-    }, 1000);
-  });
-};
 
 export default function AdminAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [userPlanStatus, setUserPlanStatus] = useState<any[] | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 10;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
     if (role !== "admin" && role !== "superadmin") {
-      // In a real application, you'd redirect or show an error
       return;
     }
 
-    // Replace this mock call with a real fetch to your FastAPI endpoint
-    // Example: fetch("http://127.0.0.1:8000/analytics/branch-data", ...)
-    mockFetchAnalyticsData().then(setAnalyticsData);
+    // Fetch main analytics data
+    fetch("http://127.0.0.1:8000/analytics/branch-data", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return res.json();
+      })
+      .then(setAnalyticsData)
+      .catch(err => {
+        console.error("Failed to fetch analytics data:", err);
+        setAnalyticsData(null); 
+      });
+
+    // Fetch user plan status data
+    fetch("http://127.0.0.1:8000/analytics/user-plan-status", {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return res.json();
+      })
+      .then(setUserPlanStatus)
+      .catch(err => {
+        console.error("Failed to fetch user plan status:", err);
+        setUserPlanStatus(null);
+      });
+
   }, []);
 
-  if (!analyticsData) {
+  // Filter users based on search term and selected status
+  const filteredUsers = useMemo(() => {
+    if (!userPlanStatus) return [];
+    
+    return userPlanStatus.filter(user => {
+      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = filterStatus === "all" || (filterStatus === "active" && user.has_plan) || (filterStatus === "inactive" && !user.has_plan);
+      return matchesSearch && matchesFilter;
+    });
+  }, [userPlanStatus, searchTerm, filterStatus]);
+
+  // Pagination logic
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  if (!analyticsData || !userPlanStatus) {
     return <p className="text-center p-8">Loading analytics...</p>;
   }
 
-  // User Analytics Data
+  const usersWithPlanCount = userPlanStatus.filter(u => u.has_plan).length;
+  const usersWithoutPlanCount = userPlanStatus.length - usersWithPlanCount;
+
+  // --- User Analytics Data ---
   const usersByGenderData = {
     labels: Object.keys(analyticsData.users.by_gender),
     datasets: [{
@@ -163,24 +138,24 @@ export default function AdminAnalytics() {
     }],
   };
   
-  const userEnrollmentData = {
-    labels: analyticsData.users.enrollment_trend.map((d: any) => d.month),
+  const usersByRoleData = {
+    labels: Object.keys(analyticsData.users.by_role),
     datasets: [{
-      label: 'New Users',
-      data: analyticsData.users.enrollment_trend.map((d: any) => d.count),
-      backgroundColor: '#9966FF',
+      data: Object.values(analyticsData.users.by_role),
+      backgroundColor: ["#FFC107", "#4BC0C0", "#9966FF"],
     }],
   };
   
-  const membershipPlanStatusData = {
-    labels: Object.keys(analyticsData.users.plan_status),
+  // --- Membership Plan Analytics Data ---
+  const plansByStatusData = {
+    labels: Object.keys(analyticsData.plans.by_status),
     datasets: [{
-      data: Object.values(analyticsData.users.plan_status),
-      backgroundColor: ['#4CAF50', '#F44336', '#FFC107'],
+      data: Object.values(analyticsData.plans.by_status),
+      backgroundColor: ["#4CAF50", "#F44336"],
     }],
   };
 
-  // Trainer Analytics Data
+  // --- Trainer & Class Analytics Data ---
   const trainersBySpecializationData = {
     labels: Object.keys(analyticsData.trainers.by_specialization),
     datasets: [{
@@ -189,15 +164,24 @@ export default function AdminAnalytics() {
       backgroundColor: "#4BC0C0",
     }],
   };
-
+  
+  const trainersByBranchData = {
+    labels: Object.keys(analyticsData.trainers.by_branch),
+    datasets: [{
+      label: 'Trainers',
+      data: Object.values(analyticsData.trainers.by_branch),
+      backgroundColor: "#66CC99",
+    }],
+  };
+  
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-boldd text-gray-800 text-logoOrange">Analytics Dashboard</h1>
-      <p className="text-gray-600">Overview of user and trainer data for your branch.</p>
+      <p className="text-gray-600">Overview of user, trainer, and plan data for your branch.</p>
       
       {/* User Analytics Section */}
       <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">User Analytics</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader><CardTitle>Users by Gender</CardTitle></CardHeader>
           <CardContent className="h-64 flex items-center justify-center">
@@ -206,70 +190,149 @@ export default function AdminAnalytics() {
         </Card>
 
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader><CardTitle>User Enrollment Over Time</CardTitle></CardHeader>
-          <CardContent className="h-64">
-            <Bar data={userEnrollmentData} options={{ maintainAspectRatio: false }} />
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader><CardTitle>Membership Plan Status</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Users by Role</CardTitle></CardHeader>
           <CardContent className="h-64 flex items-center justify-center">
-            <Doughnut data={membershipPlanStatusData} options={{ maintainAspectRatio: false }} />
+            <Doughnut data={usersByRoleData} options={{ maintainAspectRatio: false }} />
           </CardContent>
         </Card>
       </div>
+
+      <hr className="my-6 border-gray-300" />
       
-      {/* Trainer Analytics Section */}
-      <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">Trainer Analytics</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Trainer & Class Analytics Section */}
+      <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">Trainer & Class Analytics</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         <Card className="md:col-span-1 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader><CardTitle>Trainers by Specialization</CardTitle></CardHeader>
           <CardContent className="h-64">
             <Bar data={trainersBySpecializationData} options={{ maintainAspectRatio: false }} />
           </CardContent>
         </Card>
-
+        
         <Card className="md:col-span-1 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader><CardTitle>Trainer Revenue Approval</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Trainers by Branch</CardTitle></CardHeader>
+          <CardContent className="h-64">
+            <Bar data={trainersByBranchData} options={{ maintainAspectRatio: false }} />
+          </CardContent>
+        </Card>
+        
+        <Card className="md:col-span-1 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader><CardTitle>Top Rated Trainers</CardTitle></CardHeader>
           <CardContent>
-            <ul className="space-y-4">
-              {analyticsData.trainers.revenue_status.map((trainer: any) => (
-                <li key={trainer.id} className="flex items-center space-x-3">
-                  <span className="flex-1 font-medium">{trainer.name}</span>
-                  <Progress value={trainer.is_approved_by_superadmin ? 100 : 50} className="w-1/2" />
-                  <span className={`text-sm font-medium ${trainer.is_approved_by_superadmin ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {trainer.is_approved_by_superadmin ? "Approved" : "Pending"}
-                  </span>
+            <ul className="space-y-2">
+              {analyticsData.trainers.top_rated.map((trainer: any, index: number) => (
+                <li key={index} className="flex justify-between items-center p-2 border rounded-md shadow-sm">
+                  <span className="font-medium text-gray-700">{trainer.name}</span>
+                  <div className="flex items-center space-x-1 text-yellow-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span className="font-semibold">{trainer.rating}</span>
+                  </div>
                 </li>
               ))}
             </ul>
           </CardContent>
         </Card>
-        
+      </div>
+
+      <hr className="my-6 border-gray-300" />
+
+      {/* Membership Plan Analytics Section */}
+      <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">Membership Plan Analytics</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
         <Card className="md:col-span-1 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader><CardTitle>Pending PTO Requests</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Trainer</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analyticsData.trainers.pending_pto.map((pto: any) => (
-                  <TableRow key={pto.id}>
-                    <TableCell className="font-medium">{pto.trainer_name}</TableCell>
-                    <TableCell>{pto.start_date}</TableCell>
-                    <TableCell>{pto.end_date}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <CardHeader><CardTitle>Membership Plans by Status</CardTitle></CardHeader>
+          <CardContent className="h-64">
+            <Doughnut data={plansByStatusData} options={{ maintainAspectRatio: false }} />
           </CardContent>
         </Card>
+      </div>
+
+      <hr className="my-6 border-gray-300" />
+
+      {/* User Membership Status Table */}
+      <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">User Membership Status</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <Card className="shadow-lg">
+          <CardHeader><CardTitle className="text-lg">Total Users</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-gray-800">{userPlanStatus.length}</p></CardContent>
+        </Card>
+        <Card className="shadow-lg bg-green-500 text-white">
+          <CardHeader><CardTitle className="text-lg">Users with a Plan</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{usersWithPlanCount}</p></CardContent>
+        </Card>
+        <Card className="shadow-lg bg-red-500 text-white">
+          <CardHeader><CardTitle className="text-lg">Users without a Plan</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{usersWithoutPlanCount}</p></CardContent>
+        </Card>
+      </div>
+      
+      <div className="flex items-center space-x-4 mb-4">
+        <Input
+          placeholder="Search by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full md:w-1/3"
+        />
+        <Select onValueChange={(value) => setFilterStatus(value)} defaultValue="all">
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Users</SelectItem>
+            <SelectItem value="active">Active Plan</SelectItem>
+            <SelectItem value="inactive">Inactive Plan</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Plan Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentUsers.map(user => (
+                <TableRow key={user.user_id}>
+                  <TableCell className="font-medium">{user.user_id}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>
+                    <Badge className={`${user.has_plan ? "bg-green-500" : "bg-red-500"}`}>
+                      {user.has_plan ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center mt-4">
+        <Button
+          variant="outline"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        <span className="text-sm text-gray-700">
+          Page {currentPage} of {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
       </div>
     </div>
   );
