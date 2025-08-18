@@ -33,6 +33,7 @@ interface Trainer {
   availability: string;
   branch_name?: string;
   description?: string;
+  avatar?: string;
 }
 
 interface SessionSchedule {
@@ -217,23 +218,42 @@ export default function Trainers() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
         {trainers.map((trainer) => (
           <Card key={trainer.id} className="relative overflow-hidden rounded-xl shadow-md border border-gray-100 transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-            <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-logoOrange to-orange-400"></div>
+            {/* <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-logoOrange to-orange-400"></div> */}
             <CardHeader className="pb-4 pt-6">
               <div className="flex items-center space-x-5">
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center border-4 border-white shadow-md flex-shrink-0">
-                  <Users className="w-10 h-10 text-primary-foreground text-logoOrange" />
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center border-4 border-white shadow-md flex-shrink-0 overflow-hidden">
+                  {trainer.avatar ? (
+                    <img
+                      src={trainer.avatar}
+                      alt={trainer.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src="https://cdn-icons-png.flaticon.com/512/1048/1048949.png"
+                      alt="Default Gym Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-xl font-boldd text-gray-900">{trainer.name}</CardTitle>
+                  <CardTitle className="text-xl font-bold text-gray-900">
+                    {trainer.name}
+                  </CardTitle>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {trainer.specialization.map((spec, idx) => (
-                      <Badge key={idx} variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">{spec}</Badge>
+                      <Badge
+                        key={idx}
+                        variant="secondary"
+                        className="bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        {spec}
+                      </Badge>
                     ))}
                   </div>
                 </div>
               </div>
             </CardHeader>
-
             <CardContent className="space-y-4 px-6 pb-6">
               {/* Rating & Experience */}
               <div className="flex items-center space-x-2 text-gray-700">
@@ -261,7 +281,7 @@ export default function Trainers() {
               {/* Actions */}
               <div className="pt-4 space-y-3">
                 <Button
-                  className="w-full py-2 px-4 rounded-lg text-lg font-semibold bg-logoOrange hover:bg-orange-600 transition-colors shadow-md"
+                  className="w-full py-2 px-4 rounded-lg text-lg font-semibold bg-logoOrange hover:bg-[rgba(246,166,45,255)] transition-colors shadow-md"
                   onClick={() => handleBookSession(trainer)}
                 >
                   Book Session
