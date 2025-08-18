@@ -162,6 +162,9 @@ class Member(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
 
+    # New field
+    profile_picture_url = Column(String, nullable=True)
+
     # Section A
     name_full = Column(String)
     surname = Column(String)

@@ -1,9 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
+from pathlib import Path
+from dotenv import load_dotenv
 from typing import List, Optional
 from datetime import date, datetime
 from .. import models, schemas, database, utils
 from app.schemas import BulkAttendanceEntry
+import os
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+import cloudinary
+import cloudinary.uploader
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -439,3 +448,37 @@ def bulk_attendance(
 
     db.commit()
     return {"message": "Attendance submitted successfully"}
+
+
+# Configure Cloudinary once (usually in settings.py or main.py)
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
+
+@router.post("/upload-profile-picture")
+def upload_profile_picture(
+    user_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(database.get_db),
+    current_user: schemas.UserResponse = Depends(get_current_active_user)
+):
+    # Upload to cloudinary
+    result = cloudinary.uploader.upload(file.file, folder="profile_pictures")
+
+    profile_url = result.get("secure_url")
+    if not profile_url:
+        raise HTTPException(status_code=500, detail="Image upload failed")
+
+    # Save to DB
+    member = db.query(models.Member).filter(models.Member.user_id == user_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    member.profile_picture_url = profile_url
+    db.commit()
+    db.refresh(member)
+
+    return {"message": "Profile picture updated", "url": profile_url}

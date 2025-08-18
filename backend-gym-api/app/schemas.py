@@ -146,6 +146,7 @@ class SessionAttendanceResponse(BaseModel):
 
 class MemberCreate(BaseModel):
     user_id: int
+    profile_picture_url: Optional[str] = None
 
     name_full: Optional[str] = None
     surname: Optional[str] = None
