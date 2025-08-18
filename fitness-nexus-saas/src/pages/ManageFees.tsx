@@ -219,7 +219,7 @@ export default function ManageFees() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 font-poppins">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-        <h2 className="text-2xl sm:text-3xl font-boldd text-gray-900">Manage Fees</h2>
+        <h2 className="text-2xl sm:text-2xl font-boldd text-gray-900">Manage Fees</h2>
         <Button onClick={exportToCSV} className="w-full sm:w-auto flex items-center space-x-2 bg-blue-600 hover:bg-blue-700">
           <Download className="h-4 w-4" />
           <span>Export CSV</span>

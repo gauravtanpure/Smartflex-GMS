@@ -71,7 +71,7 @@ export default function Fees() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-boldd text-logoOrange">My Fees</h1>
+          <h1 className="text-2xl font-boldd text-logoOrange">My Fees</h1>
           <p className="text-lg text-muted-foreground">Manage your gym payments and view your financial history.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">

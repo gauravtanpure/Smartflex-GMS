@@ -48,7 +48,7 @@ export default function MyDiet() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-poppins">
-      <h2 className="text-3xl font-boldd text-gray-800 mb-6 text-left text-logoOrange">My Diet Plans</h2>
+      <h2 className="text-2xl font-boldd text-gray-800 mb-6 text-left text-logoOrange">My Diet Plans</h2>
       {dietPlans.length === 0 ? (
         <p className="text-gray-600 text-center text-lg text-logoOrange">No diet plans assigned to you yet. Check back later!</p>
       ) : (

@@ -196,7 +196,7 @@ export default function ManageBranches() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-boldd text-foreground text-logoOrange">Manage Branches</h1>
+      <h1 className="text-2xl font-boldd text-foreground text-logoOrange">Manage Branches</h1>
 
       {loading ? (
         <p>Loading branches and admins...</p>

@@ -84,7 +84,7 @@ export default function TrainerUsers() {
   return (
     <div className="p-6 space-y-6 font-poppins">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-boldd text-logoOrange">
+        <h1 className="text-2xl font-boldd text-logoOrange">
           My Branch Users
         </h1>
         <Button onClick={fetchUsers} disabled={loading}>

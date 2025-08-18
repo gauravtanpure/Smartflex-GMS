@@ -164,7 +164,7 @@ const ManagePTORequests = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen font-poppins">
-      <h1 className="text-3xl sm:text-3xl font-boldd text-logoOrange mb-6">Manage PTO Requests</h1>
+      <h1 className="text-2xl sm:text-2xl font-boldd text-logoOrange mb-6">Manage PTO Requests</h1>
 
       {/* Pending Requests */}
       <Card className="mb-8 rounded-lg shadow-md border-gray-100">

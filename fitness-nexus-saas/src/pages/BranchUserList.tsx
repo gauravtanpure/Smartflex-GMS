@@ -124,7 +124,7 @@ const BranchUserList = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
         <div className="flex flex-col">
-          <h1 className="text-2xl sm:text-3xl logoOrange">Branch Members</h1>
+          <h1 className="text-2xl sm:text-2xl logoOrange">Branch Members</h1>
           <p className="text-sm text-gray-500 mt-1">Manage and view all enrolled members in this branch.</p>
         </div>
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full md:w-auto">

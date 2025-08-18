@@ -219,7 +219,7 @@ export default function TrainerAttendance() {
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-boldd text-logoOrange">Manage Branch Users & Attendance</h1>
+                <h1 className="text-2xl font-boldd text-logoOrange">Manage Branch Users & Attendance</h1>
                 <div className="flex space-x-2">
                     <Button onClick={fetchData} disabled={loading} variant="outline">
                         <RefreshCcw className="mr-2 h-4 w-4" /> Refresh Users

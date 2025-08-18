@@ -202,7 +202,7 @@ export default function Attendance() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-boldd text-logoOrange mb-2">My Attendance</h1>
+          <h1 className="text-2xl sm:text-2xl font-boldd text-logoOrange mb-2">My Attendance</h1>
           <p className="text-base sm:text-lg text-muted-foreground">Track your gym check-ins and session consistency.</p>
         </div>
         <Badge variant="outline" className="mt-4 sm:mt-0 px-4 py-2 text-sm sm:text-md font-semibold flex items-center space-x-2 bg-white shadow-sm border-gray-200">
@@ -247,7 +247,7 @@ export default function Attendance() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-boldd text-success">{presentDays}</div>
+              <div className="text-2xl font-boldd text-success">{presentDays}</div>
               <p className="text-sm text-muted-foreground">out of {totalDays} general records</p>
             </CardContent>
           </Card>
@@ -260,7 +260,7 @@ export default function Attendance() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-boldd text-destructive">{totalDays - presentDays}</div>
+              <div className="text-2xl font-boldd text-destructive">{totalDays - presentDays}</div>
               <p className="text-sm text-muted-foreground">missed general check-ins</p>
             </CardContent>
           </Card>
@@ -273,7 +273,7 @@ export default function Attendance() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-boldd text-logoOrange">{attendancePercentage}%</div>
+              <div className="text-2xl font-boldd text-logoOrange">{attendancePercentage}%</div>
               <Progress value={attendancePercentage} className="mt-2 h-2 [&>*]:bg-logoOrange" />
               <p className="text-xs text-muted-foreground mt-1">Based on general gym visits.</p>
             </CardContent>

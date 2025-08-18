@@ -202,7 +202,7 @@ export default function Trainers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-boldd text-logoOrange mb-2">Our Expert Trainers</h1>
+          <h1 className="text-2xl font-boldd text-logoOrange mb-2">Our Expert Trainers</h1>
           <p className="text-lg text-muted-foreground">Discover the best fitness professionals to help you achieve your goals.</p>
         </div>
         <div className="flex items-center space-x-2 mt-4 sm:mt-0">
@@ -327,7 +327,7 @@ export default function Trainers() {
         <Dialog open={!!selectedTrainerForProfile} onOpenChange={() => setSelectedTrainerForProfile(null)}>
           <DialogContent className="sm:max-w-[550px] p-6 rounded-lg shadow-xl">
             <DialogHeader className="pb-4 border-b border-gray-200 mb-4">
-              <DialogTitle className="text-3xl font-boldd text-gray-900">Trainer Profile</DialogTitle>
+              <DialogTitle className="text-2xl font-boldd text-gray-900">Trainer Profile</DialogTitle>
               <DialogDescription className="text-md text-muted-foreground">
                 Detailed information about {trainerProfile?.name}.
               </DialogDescription>
@@ -401,7 +401,7 @@ export default function Trainers() {
         <Dialog open={!!selectedTrainerForBooking} onOpenChange={() => setSelectedTrainerForBooking(null)}>
           <DialogContent className="sm:max-w-[750px] p-6 rounded-lg shadow-xl">
             <DialogHeader className="pb-4 border-b border-gray-200 mb-4">
-              <DialogTitle className="text-3xl font-boldd text-gray-900">Book Session with {selectedTrainerForBooking.name}</DialogTitle>
+              <DialogTitle className="text-2xl font-boldd text-gray-900">Book Session with {selectedTrainerForBooking.name}</DialogTitle>
               <DialogDescription className="text-md text-muted-foreground">
                 Select an upcoming session to book.
               </DialogDescription>
@@ -469,7 +469,7 @@ export default function Trainers() {
         <Dialog open={!!bookingConfirmation} onOpenChange={() => setBookingConfirmation(null)}>
           <DialogContent className="sm:max-w-[480px] p-6 rounded-lg shadow-xl text-center">
             <DialogHeader>
-              <DialogTitle className="text-3xl font-boldd text-green-600 mb-2">Session Booked Successfully!</DialogTitle>
+              <DialogTitle className="text-2xl font-boldd text-green-600 mb-2">Session Booked Successfully!</DialogTitle>
               <DialogDescription className="text-md text-muted-foreground">
                 You're all set for your next workout.
               </DialogDescription>

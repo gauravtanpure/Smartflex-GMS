@@ -145,8 +145,8 @@ export default function UserAttendance() {
 
   return (
     <div className="p-6">
-      <h2 className="text-3xl font-extrabold mb-6 text-gray-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
-        User Attendance Overview 📋
+      <h2 className="text-2xl font-boldd text-logoOrange mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+        User Attendance Overview
       </h2>
 
       <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-white rounded-xl shadow-md">

@@ -152,7 +152,7 @@ const PTORequest = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen font-poppins">
-      <h1 className="text-3xl sm:text-4xl font-boldd text-logoOrange mb-6">Request Paid Time Off</h1>
+      <h1 className="text-2xl sm:text-2xl font-boldd text-logoOrange mb-6">Request Paid Time Off</h1>
 
       {/* Submit New Request Card */}
       <Card className="mb-8 rounded-lg shadow-md border-gray-100">
