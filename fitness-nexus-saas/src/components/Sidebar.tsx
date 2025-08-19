@@ -226,7 +226,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               <Award className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/manage-membership-plans" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
               {!collapsed && (
                 <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                  Manage Membership Plans
+                  Membership Plans
                 </span>
               )}
             </NavLink>

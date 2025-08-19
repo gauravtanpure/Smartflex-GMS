@@ -24,8 +24,9 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
 
   const fetchNotifications = async () => {
     const token = localStorage.getItem("token");
+    // console.log("API_URL:", import.meta.env.VITE_API_URL);
     try {
-      const res = await axios.get("http://localhost:8000/fees/notifications", {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/fees/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications(res.data);
@@ -49,7 +50,7 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
     const token = localStorage.getItem("token");
     if (!showDropdown && unreadCount > 0) {
       try {
-        const res = await axios.put("http://localhost:8000/fees/notifications/mark-all-read", {}, {
+        const res = await axios.put(`${import.meta.env.VITE_API_URL}/fees/notifications/mark-all-read`, {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setNotifications(res.data);
@@ -65,7 +66,7 @@ const handleNotificationClick = async (notification: Notification) => {
     const token = localStorage.getItem("token");
     try {
       // Mark the specific notification as read
-      await axios.put(`http://localhost:8000/fees/notifications/${notification.id}`, { is_read: true }, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/fees/notifications/${notification.id}`, { is_read: true }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       

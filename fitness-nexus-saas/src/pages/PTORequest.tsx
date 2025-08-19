@@ -27,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Loader2, Info } from "lucide-react"; // Added Loader2 and Info icons
 import { cn } from "@/lib/utils"; // cn utility for conditional class names
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL}`;
 
 // Define interface for PTO request data
 interface PTORequestData {
@@ -157,7 +157,7 @@ const PTORequest = () => {
       {/* Submit New Request Card */}
       <Card className="mb-8 rounded-lg shadow-md border-gray-100">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-boldd text-logoOrange">Submit a New Request</CardTitle>
+          <CardTitle className="text-xl font-boldd text-logoOrange">Submit a New Request</CardTitle>
           <CardDescription className="text-md text-muted-foreground">
             Fill out the form below to request time off from work.
           </CardDescription>
@@ -233,7 +233,7 @@ const PTORequest = () => {
             <Button
               type="submit"
               disabled={createRequestMutation.isPending}
-              className="w-full sm:w-auto px-6 py-3 text-lg font-semibold bg-logoOrange hover:bg-orange-600 transition-colors"
+              className="w-full sm:w-auto px-4 py-2 text-sm font-semibold bg-logoOrange hover:bg-orange-600 transition-colors"
             >
               {createRequestMutation.isPending ? (
                 <span className="flex items-center">
@@ -250,7 +250,7 @@ const PTORequest = () => {
       {/* PTO Request History Card */}
       <Card className="rounded-lg shadow-md border-gray-100">
         <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-boldd text-gray-800">My PTO Request History</CardTitle>
+          <CardTitle className="text-xl font-boldd text-gray-800">My PTO Request History</CardTitle>
           <CardDescription className="text-md text-muted-foreground">
             A list of all your submitted time off requests and their current status.
           </CardDescription>

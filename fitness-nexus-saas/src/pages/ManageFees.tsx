@@ -58,12 +58,12 @@ export default function ManageFees() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const usersRes = await axios.get("http://localhost:8000/users/branch-users", {
+        const usersRes = await axios.get(`${import.meta.env.VITE_API_URL}/users/branch-users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(usersRes.data);
 
-        const plansRes = await axios.get("http://localhost:8000/membership-plans/", {
+        const plansRes = await axios.get(`${import.meta.env.VITE_API_URL}/membership-plans/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPlans(plansRes.data);
@@ -86,7 +86,7 @@ export default function ManageFees() {
 
   const fetchBranchFees = () => {
     axios
-      .get(`http://localhost:8000/fees/branch?search_query=${searchQuery}`, {
+      .get(`${import.meta.env.VITE_API_URL}/fees/branch?search_query=${searchQuery}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(res => setFees(res.data))
@@ -124,7 +124,7 @@ export default function ManageFees() {
     }
 
     axios
-      .post("http://localhost:8000/fees", {
+      .post(`${import.meta.env.VITE_API_URL}/fees`, {
         user_id: parseInt(form.user_id),
         fee_type: form.fee_type,
         amount: parseFloat(form.amount),
@@ -152,7 +152,7 @@ export default function ManageFees() {
 
   const handleTogglePaidStatus = (feeId: number, currentStatus: boolean) => {
     axios
-      .put(`http://localhost:8000/fees/${feeId}/status`, { is_paid: !currentStatus }, {
+      .put(`${import.meta.env.VITE_API_URL}/fees/${feeId}/status`, { is_paid: !currentStatus }, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(() => {

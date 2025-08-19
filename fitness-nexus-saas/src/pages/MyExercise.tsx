@@ -23,7 +23,7 @@ export default function MyExercise() {
   useEffect(() => {
     const fetchMyExercisePlans = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/users/my-exercise-plans", {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/users/my-exercise-plans`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setExercisePlans(res.data);

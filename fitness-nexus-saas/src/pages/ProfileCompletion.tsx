@@ -262,7 +262,7 @@ export default function ProfileCompletion() {
       }
 
       try {
-        const resUser = await fetch(`http://localhost:8000/users/${userId}`, {
+        const resUser = await fetch(`${import.meta.env.VITE_API_URL}/users/${userId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -272,7 +272,7 @@ export default function ProfileCompletion() {
         if (!resUser.ok) throw new Error("User fetch failed");
         const userData = await resUser.json();
 
-        const resMember = await fetch(`http://localhost:8000/users/member/${userId}`, {
+        const resMember = await fetch(`${import.meta.env.VITE_API_URL}/users/member/${userId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -443,7 +443,7 @@ export default function ProfileCompletion() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/users/${userId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${userId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -461,7 +461,7 @@ export default function ProfileCompletion() {
         throw new Error(errorData.detail || "Failed to update user's basic info.");
       }
 
-      const memberRes = await fetch("http://localhost:8000/users/profile-complete", {
+      const memberRes = await fetch(`${import.meta.env.VITE_API_URL}/users/profile-complete`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -551,7 +551,7 @@ export default function ProfileCompletion() {
       formData.append("file", file);
 
       try {
-        const res = await fetch(`http://localhost:8000/users/upload-profile-picture?user_id=${userId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/users/upload-profile-picture?user_id=${userId}`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,

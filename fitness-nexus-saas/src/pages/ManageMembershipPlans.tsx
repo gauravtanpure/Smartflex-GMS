@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea"; // For description
 import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
+import { PencilIcon, Trash2Icon } from "lucide-react"; // Import icons
 
 interface MembershipPlan {
   id: number;
@@ -35,17 +36,13 @@ interface MembershipPlan {
   updated_at: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${import.meta.env.VITE_API_URL}`;
 
 const fetchMembershipPlans = async (userRole: string | null, userBranch: string | null): Promise<MembershipPlan[]> => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("No authentication token found.");
 
   let url = `${API_BASE_URL}/membership-plans/`;
-  // The backend already handles role-based filtering (admin sees only approved for their branch, superadmin sees all).
-  // No explicit frontend query parameter filtering needed here for general fetch.
-  // The `branch_name` and `is_approved` filtering logic is primarily on the backend.
-
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -62,9 +59,6 @@ const fetchMembershipPlans = async (userRole: string | null, userBranch: string 
 const createMembershipPlan = async (planData: Omit<MembershipPlan, "id" | "created_at" | "updated_at" | "is_approved" >): Promise<MembershipPlan> => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No authentication token found.");
-    // The backend will set `is_approved` based on the role creating the plan.
-    // For admins, it will be false (needs superadmin approval).
-    // For superadmins, it will be true by default.
 
     const response = await fetch(`${API_BASE_URL}/membership-plans/`, {
         method: "POST",
@@ -72,7 +66,7 @@ const createMembershipPlan = async (planData: Omit<MembershipPlan, "id" | "creat
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(planData), // Send payload as is, backend handles default branch and approval
+        body: JSON.stringify(planData),
     });
     if (!response.ok) {
         const errorData = await response.json();
@@ -85,8 +79,6 @@ const updateMembershipPlan = async (plan: MembershipPlan): Promise<MembershipPla
   const token = localStorage.getItem("token");
   if (!token) throw new Error("No authentication token found.");
 
-  // Only send the fields that can be updated.
-  // The backend prevents admins from changing `is_approved`.
   const payload: Partial<MembershipPlan> = {
     plan_name: plan.plan_name,
     description: plan.description,
@@ -95,7 +87,7 @@ const updateMembershipPlan = async (plan: MembershipPlan): Promise<MembershipPla
   };
 
   if (localStorage.getItem("role") === "superadmin") {
-      payload.is_approved = plan.is_approved; // Superadmin can update approval status
+      payload.is_approved = plan.is_approved;
   }
 
   const response = await fetch(`${API_BASE_URL}/membership-plans/${plan.id}`, {
@@ -135,7 +127,7 @@ const ManageMembershipPlans = () => {
   const userBranch = localStorage.getItem("branch");
 
   const { data: plans, isLoading, error } = useQuery<MembershipPlan[], Error>({
-    queryKey: ["membershipPlans", userRole, userBranch], // Include role and branch in query key
+    queryKey: ["membershipPlans", userRole, userBranch],
     queryFn: () => fetchMembershipPlans(userRole, userBranch),
   });
 
@@ -195,11 +187,10 @@ const ManageMembershipPlans = () => {
     description: "",
     price: 0,
     duration_months: 0,
-    branch_name: "", // Will be set by backend if admin
+    branch_name: "",
   });
 
   const handleCreateNewPlan = () => {
-    // Filter out branch_name if admin, as backend will set it
     const payload = userRole === "admin" ? { ...newPlan, branch_name: undefined } : newPlan;
     createMutation.mutate(payload);
   };
@@ -219,12 +210,10 @@ const ManageMembershipPlans = () => {
   if (isLoading) return <div>Loading membership plans...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
-  // No explicit frontend filtering needed here as backend handles it based on role
-  // Superadmin gets all, Admin gets only approved for their branch.
   const displayedPlans = plans || [];
 
   return (
-    <div className="container mx-auto p-4" font-poppins>
+    <div className="container mx-auto p-4 font-poppins">
       <div className="flex justify-between items-center mb-6" >
         <h1 className="text-2xl font-boldd text-logoOrange">Manage Membership Plans</h1>
         {(userRole === "admin" || userRole === "superadmin") && (
@@ -241,7 +230,7 @@ const ManageMembershipPlans = () => {
               <TableHead>Price (₹)</TableHead>
               <TableHead>Duration (Months)</TableHead>
               <TableHead>Branch</TableHead>
-              <TableHead>Approved</TableHead> {/* ⬅️ NEW COLUMN */}
+              <TableHead>Approved</TableHead>
               {(userRole === "admin" || userRole === "superadmin") && (
                 <TableHead>Actions</TableHead>
               )}
@@ -261,27 +250,27 @@ const ManageMembershipPlans = () => {
                 <TableCell>{plan.duration_months}</TableCell>
                 <TableCell>{plan.branch_name || "N/A"}</TableCell>
                 <TableCell>
-                    <Checkbox checked={plan.is_approved} disabled /> {/* Display status, not editable here */}
+                    <Checkbox checked={plan.is_approved} disabled />
                 </TableCell>
                 {(userRole === "admin" || userRole === "superadmin") && (
                   <TableCell>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
                       className="mr-2"
                       onClick={() => {
                         setSelectedPlan(plan);
                         setEditDialogOpen(true);
                       }}
                     >
-                      Edit
+                      <PencilIcon className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="destructive"
-                      size="sm"
+                      size="icon"
                       onClick={() => handleDeletePlan(plan.id)}
                     >
-                      Delete
+                      <Trash2Icon className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 )}

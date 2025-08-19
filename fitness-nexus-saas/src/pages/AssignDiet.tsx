@@ -37,7 +37,7 @@ export default function AssignDiet() {
   // Fetch users from the trainer's branch
   useEffect(() => {
     axios
-      .get("http://localhost:8000/users/branch-users", {
+      .get(`${import.meta.env.VITE_API_URL}/users/branch-users`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(res => {
@@ -55,7 +55,7 @@ export default function AssignDiet() {
   const fetchAssignedDietPlans = async () => {
     try {
       setLoadingPlans(true);
-      const res = await axios.get("http://localhost:8000/trainers/diet-plans", {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/trainers/diet-plans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAssignedDietPlans(res.data);
@@ -88,7 +88,7 @@ export default function AssignDiet() {
     }
 
     try {
-      await axios.post("http://localhost:8000/trainers/diet-plans", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/trainers/diet-plans`, {
         user_id: parseInt(form.user_id),
         title: form.title,
         description: form.description,
@@ -110,7 +110,7 @@ export default function AssignDiet() {
       return;
     }
     try {
-      await axios.delete(`http://localhost:8000/trainers/diet-plans/${planId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/trainers/diet-plans/${planId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Diet plan deleted successfully!");
@@ -139,7 +139,7 @@ export default function AssignDiet() {
         return;
       }
 
-      await axios.put(`http://localhost:8000/trainers/diet-plans/${planId}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/trainers/diet-plans/${planId}`, {
         user_id: originalPlan.user_id, // User ID cannot be changed, send original
         title: editForm.title,
         description: editForm.description,

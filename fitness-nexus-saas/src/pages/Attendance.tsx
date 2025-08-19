@@ -87,7 +87,7 @@ export default function Attendance() {
       }
 
       // Fetch general user attendance
-      const userAttendanceRes = await fetch("http://localhost:8000/users/my-attendance", {
+      const userAttendanceRes = await fetch(`${import.meta.env.VITE_API_URL}/users/my-attendance`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -101,7 +101,7 @@ export default function Attendance() {
       }
 
       // Fetch session attendance - we need to get all sessions first, then attendance for each
-      const sessionsRes = await fetch("http://localhost:8000/trainers/public-sessions", {
+      const sessionsRes = await fetch(`${import.meta.env.VITE_API_URL}/trainers/public-sessions`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -117,7 +117,7 @@ export default function Attendance() {
         const attendancePromises = sessions.map(async (session: any) => {
           try {
             const attendanceRes = await fetch(
-              `http://localhost:8000/trainers/sessions/${session.id}/attendance?user_id=${currentUserId}`,
+              `${import.meta.env.VITE_API_URL}/trainers/sessions/${session.id}/attendance?user_id=${currentUserId}`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

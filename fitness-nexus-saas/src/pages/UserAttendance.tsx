@@ -40,7 +40,7 @@ interface AttendanceRecord {
   created_at: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${import.meta.env.VITE_API_URL}`;
 
 export default function UserAttendance() {
   const { toast } = useToast();
@@ -69,7 +69,7 @@ export default function UserAttendance() {
       return [];
     }
 
-    let url = `http://localhost:8000/users/branch-attendance?`;
+    let url = `${import.meta.env.VITE_API_URL}/users/branch-attendance?`;
     if (selectedDate) {
       url += `attendance_date=${format(selectedDate, "yyyy-MM-dd")}&`;
     }

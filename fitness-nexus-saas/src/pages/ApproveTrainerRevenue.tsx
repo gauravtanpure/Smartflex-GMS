@@ -20,7 +20,7 @@ const ApproveTrainerRevenue = () => {
   const fetchPendingTrainers = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:8000/trainers/pending-revenue-approvals", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/trainers/pending-revenue-approvals`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -42,7 +42,7 @@ const ApproveTrainerRevenue = () => {
   const handleApprove = async (trainerId: number) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:8000/trainers/revenue/${trainerId}/approve`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/trainers/revenue/${trainerId}/approve`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });

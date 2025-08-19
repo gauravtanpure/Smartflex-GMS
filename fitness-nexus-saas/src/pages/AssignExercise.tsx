@@ -37,7 +37,7 @@ export default function AssignExercise() {
   // Fetch users from the trainer's branch
   useEffect(() => {
     axios
-      .get("http://localhost:8000/users/branch-users", {
+      .get(`${import.meta.env.VITE_API_URL}/users/branch-users`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(res => {
@@ -55,7 +55,7 @@ export default function AssignExercise() {
   const fetchAssignedExercisePlans = async () => {
     try {
       setLoadingPlans(true);
-      const res = await axios.get("http://localhost:8000/trainers/exercise-plans", {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/trainers/exercise-plans`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAssignedExercisePlans(res.data);
@@ -87,7 +87,7 @@ export default function AssignExercise() {
     }
 
     try {
-      await axios.post("http://localhost:8000/trainers/exercise-plans", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/trainers/exercise-plans`, {
         user_id: parseInt(form.user_id),
         title: form.title,
         description: form.description,
@@ -109,7 +109,7 @@ export default function AssignExercise() {
       return;
     }
     try {
-      await axios.delete(`http://localhost:8000/trainers/exercise-plans/${planId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/trainers/exercise-plans/${planId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Exercise plan deleted successfully!");
@@ -137,7 +137,7 @@ export default function AssignExercise() {
         return;
       }
 
-      await axios.put(`http://localhost:8000/trainers/exercise-plans/${planId}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/trainers/exercise-plans/${planId}`, {
         user_id: originalPlan.user_id, // User ID cannot be changed, send original
         title: editForm.title,
         description: editForm.description,

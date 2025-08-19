@@ -42,7 +42,7 @@ export default function TrainerUsers() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found. Please log in.");
 
-      const res = await fetch("http://localhost:8000/users/branch-users", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users/branch-users`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

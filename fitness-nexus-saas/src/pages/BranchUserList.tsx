@@ -35,7 +35,7 @@ const BranchUserList = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8000/users/branch-enrollments", {
+      .get(`${import.meta.env.VITE_API_URL}/users/branch-enrollments`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
       .then((res) => {

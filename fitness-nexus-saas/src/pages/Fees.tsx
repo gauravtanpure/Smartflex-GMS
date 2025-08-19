@@ -41,7 +41,7 @@ export default function Fees() {
       if (!token) {
         throw new Error("No authentication token found. Please log in.");
       }
-      const res = await axios.get("http://localhost:8000/fees/my-fees", {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/fees/my-fees`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFees(res.data);

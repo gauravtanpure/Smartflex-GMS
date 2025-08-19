@@ -75,7 +75,7 @@ export default function TrainerAttendance() {
 
             try {
                 const token = localStorage.getItem("token");
-                const res = await fetch(`http://localhost:8000/face-enroll/${enrollUserId}`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/face-enroll/${enrollUserId}`, {
                     method: "POST",
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -138,7 +138,7 @@ export default function TrainerAttendance() {
 
             try {
                 const token = localStorage.getItem("token");
-                const res = await fetch("http://localhost:8000/face-attendance", {
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/face-attendance`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
@@ -166,7 +166,7 @@ export default function TrainerAttendance() {
     const fetchBranchUsers = async () => {
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch("http://localhost:8000/users/branch-users", {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/users/branch-users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -183,7 +183,7 @@ export default function TrainerAttendance() {
     const fetchEnrolledUsers = async () => {
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch("http://localhost:8000/enrolled-users", {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/enrolled-users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {

@@ -73,7 +73,7 @@ export default function ManageTrainers() {
   const fetchTrainers = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:8000/trainers/", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/trainers/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -103,7 +103,7 @@ export default function ManageTrainers() {
     }
 
     const token = localStorage.getItem("token");
-    const url = editTrainerId ? `http://localhost:8000/trainers/${editTrainerId}` : `http://localhost:8000/trainers/add-trainer`;
+    const url = editTrainerId ? `${import.meta.env.VITE_API_URL}/trainers/${editTrainerId}` : `${import.meta.env.VITE_API_URL}/trainers/add-trainer`;
     const method = editTrainerId ? "PUT" : "POST";
 
     // Send all new fields in the request body
@@ -167,7 +167,7 @@ export default function ManageTrainers() {
 
   const handleDelete = async (id: number) => {
     const token = localStorage.getItem("token");
-    const res = await fetch(`http://localhost:8000/trainers/${id}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/trainers/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
