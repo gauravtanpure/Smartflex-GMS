@@ -28,6 +28,9 @@ COPY requirements.txt .
 # ✅ Install dependencies (dlib-bin included, no cmake compile)
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Now install face-recognition without pulling dlib again
+RUN pip install face-recognition==1.3.0 --no-deps
+
 # Copy the application code
 COPY . .
 
