@@ -1,15 +1,16 @@
 services:
   - type: web
-    name: fastapi-backend
+    name: smartflex-backend
     env: python
-    region: singapore
-    buildCommand: |
-      apt-get update && apt-get install -y cmake build-essential libgl1
-      pip install --upgrade pip
-      pip install -r requirements.txt
-    startCommand: |
-      gunicorn app.main:app -k uvicorn.workers.UvicornWorker --timeout 300
+    rootDir: backend-gym-api
     plan: free
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+    startCommand: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --timeout 300
+    autoDeploy: true
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11
+      - key: DATABASE_URL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
