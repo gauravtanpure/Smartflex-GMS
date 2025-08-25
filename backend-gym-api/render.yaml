@@ -2,12 +2,14 @@ services:
   - type: web
     name: fastapi-backend
     env: python
-    plan: free
-    region: singapore   # change to singapore or frankfurt if closer
-    pythonVersion: 3.11
-
+    region: singapore
     buildCommand: |
-      pip install --upgrade pip setuptools wheel cmake
-      pip install --no-build-isolation -r requirements.txt
-
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+      apt-get update && apt-get install -y cmake build-essential libgl1
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      gunicorn app.main:app -k uvicorn.workers.UvicornWorker --timeout 300
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
