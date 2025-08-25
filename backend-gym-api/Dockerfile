@@ -23,7 +23,8 @@ COPY . ./
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip setuptools wheel
-RUN pip install -r requirements.txt
+RUN pip install dlib==19.24.0  # prebuilt wheel available
+RUN pip install -r requirements.txt --no-deps
 
 EXPOSE 8000
 
