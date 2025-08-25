@@ -25,6 +25,7 @@ RUN pip install --upgrade pip setuptools wheel
 
 # Install remaining Python dependencies without reinstalling dlib
 RUN pip install -r requirements.txt --no-deps
+RUN pip install typing-extensions
 
 # Expose port
 EXPOSE 8000
