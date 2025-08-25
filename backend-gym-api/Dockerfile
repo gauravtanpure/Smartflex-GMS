@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
     liblapack-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# ✅ Prevent dlib source install
+RUN pip uninstall -y dlib || true
+
 # Upgrade pip & build tools
 RUN pip install --upgrade pip setuptools wheel
 
