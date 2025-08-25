@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend code
-COPY backend-gym-api/ ./
+COPY . ./
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip setuptools wheel
