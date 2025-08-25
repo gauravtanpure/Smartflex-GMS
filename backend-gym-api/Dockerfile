@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
-    libx11-dev \
+    libxext6 \
     libx11-dev \
     libgtk-3-dev \
     libboost-all-dev \
@@ -24,7 +24,10 @@ RUN pip install --upgrade pip setuptools wheel cmake
 # Copy requirements first (for caching)
 COPY requirements.txt .
 
-# ✅ Install all dependencies including prebuilt dlib-bin
+# ✅ Install prebuilt dlib wheel instead of building from source
+RUN pip install --no-cache-dir dlib-bin==19.24.2
+
+# ✅ Install other dependencies (face-recognition will detect dlib automatically)
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
