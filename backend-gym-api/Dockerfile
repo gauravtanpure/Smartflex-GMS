@@ -24,7 +24,7 @@ RUN pip install --upgrade pip setuptools wheel
 # RUN pip install dlib==19.24.0 --find-links https://github.com/davisking/dlib/releases || echo "dlib install skipped on Render"
 
 # Install remaining Python dependencies without reinstalling dlib
-RUN pip install -r requirements.txt --no-deps
+RUN pip install -r requirements.txt 
 RUN pip install typing-extensions
 
 # Expose port
