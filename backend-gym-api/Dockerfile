@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxrender1 \
     libx11-dev \
+    libx11-dev \
     libgtk-3-dev \
     libboost-all-dev \
     libopenblas-dev \
