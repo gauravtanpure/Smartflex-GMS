@@ -1,7 +1,8 @@
-# --- Build tools (must be first) ---
+# --- Build tools ---
 pip>=24.0
 setuptools>=70.0.0
 wheel
+cmake
 
 # --- Core FastAPI stack ---
 fastapi==0.115.0
@@ -29,8 +30,7 @@ numpy==1.24.4
 dlib==19.24.2
 face-recognition==1.3.0
 face-recognition-models==0.3.0
-opencv-python-headless==4.10.0.84  # Use headless for Render (no GUI)
-# NOTE: Removed opencv-python and opencv-contrib-python for compatibility
+opencv-python-headless==4.10.0.84
 
 # --- API utils ---
 httpx==0.27.0
@@ -41,6 +41,14 @@ urllib3==2.2.2
 certifi==2024.7.4
 dnspython==2.6.1
 
+# --- CLI & Formatting ---
+typer==0.12.3
+rich==13.7.1
+colorama==0.4.6
+Pygments==2.18.0
+click==8.1.7
+Jinja2==3.1.4
+MarkupSafe==2.1.5
 
 # --- Websockets & ASGI ---
 websockets==12.0
@@ -48,5 +56,5 @@ watchfiles==0.21.0
 httptools==0.6.1
 h11==0.14.0
 
-# --- Production server for Render ---
+# --- Production server ---
 gunicorn==21.2.0
