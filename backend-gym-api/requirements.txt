@@ -27,6 +27,7 @@ PyYAML==6.0.2
 
 # --- Face recognition & OpenCV ---
 numpy==1.24.4
+dlib==19.24.2 --only-binary :all:
 face-recognition==1.3.0
 face-recognition-models==0.3.0
 opencv-python-headless==4.10.0.84
