@@ -2,7 +2,6 @@
 pip>=24.0
 setuptools>=70.0.0
 wheel
-cmake
 
 # --- Core FastAPI stack ---
 fastapi==0.115.0
@@ -42,14 +41,6 @@ urllib3==2.2.2
 certifi==2024.7.4
 dnspython==2.6.1
 
-# --- CLI & Formatting ---
-typer==0.12.3
-rich==13.7.1
-colorama==0.4.6
-Pygments==2.18.0
-click==8.1.7
-Jinja2==3.1.4
-MarkupSafe==2.1.5
 
 # --- Websockets & ASGI ---
 websockets==12.0
