@@ -21,7 +21,7 @@ COPY . ./
 RUN pip install --upgrade pip setuptools wheel
 
 # Install prebuilt dlib wheel from GitHub (avoids memory-heavy build)
-RUN pip install dlib==19.24.0 --find-links https://github.com/davisking/dlib/releases || echo "dlib install skipped on Render"
+# RUN pip install dlib==19.24.0 --find-links https://github.com/davisking/dlib/releases || echo "dlib install skipped on Render"
 
 # Install remaining Python dependencies without reinstalling dlib
 RUN pip install -r requirements.txt --no-deps
