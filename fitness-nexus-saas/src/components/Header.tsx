@@ -31,7 +31,7 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
       });
       setNotifications(res.data);
     } catch (err) {
-      // console.error("Notification fetch failed");
+      console.error("Notification fetch failed");
     }
   };
 
