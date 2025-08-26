@@ -1,5 +1,3 @@
-// src/pages/Register.tsx
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,12 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react"; // ✅ Added Loader2
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false); // ✅ Loading state
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -49,6 +48,8 @@ export default function Register() {
       });
       return;
     }
+
+    setLoading(true); // ✅ Start loading
 
     const dataToSend = {
       name: formData.name,
@@ -86,6 +87,8 @@ export default function Register() {
         description: "Could not connect to the server.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false); // ✅ Stop loading
     }
   };
 
@@ -95,8 +98,7 @@ export default function Register() {
 
   return (
     <div className="font-poppins min-h-screen w-full flex items-center justify-center relative overflow-hidden p-4 bg-gradient-to-br from-blue-50 to-blue-100">
-
-      {/* Motivation & Gym Background Stickers */}
+      {/* Background Stickers */}
       <img
         src="https://cdn-icons-png.flaticon.com/512/10494/10494446.png"
         alt="dumbbell"
@@ -135,6 +137,7 @@ export default function Register() {
 
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-3">
+              {/* Name */}
               <div className="space-y-1">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -147,6 +150,7 @@ export default function Register() {
                 />
               </div>
 
+              {/* Email */}
               <div className="space-y-1">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -159,6 +163,7 @@ export default function Register() {
                 />
               </div>
 
+              {/* Phone */}
               <div className="space-y-1">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
@@ -171,6 +176,7 @@ export default function Register() {
                 />
               </div>
 
+              {/* Gender & Branch */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="gender">Gender</Label>
@@ -188,7 +194,6 @@ export default function Register() {
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-
                 </div>
 
                 <div className="space-y-1">
@@ -210,6 +215,7 @@ export default function Register() {
                 </div>
               </div>
 
+              {/* Password & Confirm Password */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="password">Password</Label>
@@ -268,11 +274,22 @@ export default function Register() {
                 </div>
               </div>
 
+              {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full mt-4 bg-[#6b7e86] hover:bg-[#5a6b72] text-white"
+                disabled={loading}
+                className={`w-full mt-4 flex items-center justify-center ${
+                  loading ? "bg-gray-400" : "bg-[#6b7e86] hover:bg-[#5a6b72]"
+                } text-white`}
               >
-                Create Account
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </form>
 

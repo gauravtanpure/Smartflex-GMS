@@ -1,5 +1,3 @@
-// src/pages/Login.tsx
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,18 +10,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react"; // Added Loader2 icon
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ New state for loading
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); // ✅ Start loading
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
@@ -62,6 +62,8 @@ export default function Login() {
         description: "An unexpected error occurred during login.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false); // ✅ Stop loading
     }
   };
 
@@ -147,9 +149,17 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#6b7e86] hover:bg-[#5a6b72] text-white mt-2"
+                disabled={loading}
+                className={`w-full ${loading ? "bg-gray-400" : "bg-[#6b7e86] hover:bg-[#5a6b72]"} text-white mt-2 flex items-center justify-center`}
               >
-                Sign In
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 
