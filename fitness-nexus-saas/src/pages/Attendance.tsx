@@ -141,7 +141,7 @@ export default function Attendance() {
             }
             return [];
           } catch (error) {
-            console.warn(`Failed to fetch attendance for session ${session.id}:`, error);
+            // console.warn(`Failed to fetch attendance for session ${session.id}:`, error);
             return [];
           }
         });

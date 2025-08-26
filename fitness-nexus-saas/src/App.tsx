@@ -45,7 +45,7 @@ const App = () => {
 
     if (!token) {
       if (!hasShownAuthError && location.pathname !== '/login' && location.pathname !== '/register') {
-        console.warn("Unauthorized access: No token found.");
+        // console.warn("Unauthorized access: No token found.");
         setHasShownAuthError(true);
       }
       return <Navigate to="/login" replace />;
@@ -59,7 +59,7 @@ const App = () => {
       );
     } else {
       if (!hasShownAuthError) {
-        console.warn(`Unauthorized access: Role '${role}' not allowed for this route. Required roles: ${allowedRoles.join(', ')}`);
+        // console.warn(`Unauthorized access: Role '${role}' not allowed for this route. Required roles: ${allowedRoles.join(', ')}`);
         setHasShownAuthError(true);
       }
       return <Navigate to="/dashboard" replace />;
