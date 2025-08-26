@@ -168,14 +168,18 @@ const handleNotificationClick = async (notification: Notification) => {
           )}
 
           <Button
-            variant="ghost"
-            size="sm"
-            className="hover:bg-white/10"
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <LogOut className="w-5 h-5 text-red-600" />
-          </Button>
+  variant="ghost"
+  size="sm"
+  className="hover:bg-white/10"
+  onClick={() => {
+    if (window.confirm("Are you sure you want to logout?")) {
+      handleLogout();
+    }
+  }}
+  title="Logout"
+>
+  <LogOut className="w-5 h-5 text-red-600" />
+</Button>
         </div>
       </div>
     </header>
