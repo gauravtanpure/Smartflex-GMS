@@ -68,7 +68,7 @@ export default function AdminAnalytics() {
     }
 
     // Fetch main analytics data
-    fetch("http://127.0.0.1:8000/analytics/branch-data", {
+    fetch(`${import.meta.env.VITE_API_URL}/analytics/branch-data`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
@@ -84,7 +84,7 @@ export default function AdminAnalytics() {
       });
 
     // Fetch user plan status data
-    fetch("http://127.0.0.1:8000/analytics/user-plan-status", {
+    fetch(`${import.meta.env.VITE_API_URL}/analytics/user-plan-status`, {
         headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
