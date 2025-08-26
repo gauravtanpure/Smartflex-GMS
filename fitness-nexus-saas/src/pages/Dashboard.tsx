@@ -53,7 +53,7 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/users/my-attendance", {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/users/my-attendance`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
