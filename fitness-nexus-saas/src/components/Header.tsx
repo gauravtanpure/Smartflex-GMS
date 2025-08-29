@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 interface HeaderProps {
   sidebarCollapsed?: boolean;
@@ -21,10 +22,10 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false); // new state for logout modal
 
   const fetchNotifications = async () => {
     const token = localStorage.getItem("token");
-    // console.log("API_URL:", import.meta.env.VITE_API_URL);
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/fees/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -61,19 +62,15 @@ export function Header({ sidebarCollapsed = false, onMenuClick }: HeaderProps) {
     setShowDropdown(!showDropdown);
   };
 
-  // Inside handleNotificationClick function in Header.tsx
-const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     const token = localStorage.getItem("token");
     try {
-      // Mark the specific notification as read
       await axios.put(`${import.meta.env.VITE_API_URL}/fees/notifications/${notification.id}`, { is_read: true }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
-      // Update the state to reflect the change immediately
+
       setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
 
-      // Navigate based on the notification type
       switch (notification.notification_type) {
         case "fee_assignment":
           navigate("/fees");
@@ -90,10 +87,10 @@ const handleNotificationClick = async (notification: Notification) => {
         case "exercise_plan_assigned_to_user":
           navigate("/my-exercise");
           break;
-        case "revenue_approval_pending": // New case for superadmin
+        case "revenue_approval_pending":
           navigate("/superadmin/approve-revenue");
           break;
-        case "revenue_approval_complete": // New case for admin
+        case "revenue_approval_complete":
           navigate("/manage-trainers");
           break;
         default:
@@ -104,16 +101,13 @@ const handleNotificationClick = async (notification: Notification) => {
     } catch (err) {
       console.error("Failed to handle notification click:", err);
     }
-};
-
+  };
 
   return (
     <header
       className="fixed top-0 right-0 left-0 z-30 bg-blue-50 border-b border-blue-100 transition-all duration-300 font-poppins"
-
       style={{
-        paddingLeft:
-          window.innerWidth >= 1024 ? (sidebarCollapsed ? "4rem" : "16rem") : "0",
+        paddingLeft: window.innerWidth >= 1024 ? (sidebarCollapsed ? "4rem" : "16rem") : "0",
       }}
     >
       <div className="flex items-center justify-between px-4 lg:px-6 py-2.5">
@@ -129,7 +123,6 @@ const handleNotificationClick = async (notification: Notification) => {
           <h1 className="text-lg lg:text-xl font-semibold text-logoOrange !p-0 !m-0">
             SmartFlex Fitness
           </h1>
-
         </div>
 
         <div className="flex items-center space-x-2 lg:space-x-4 relative">
@@ -167,15 +160,38 @@ const handleNotificationClick = async (notification: Notification) => {
             </div>
           )}
 
+          {/* Logout Button */}
           <Button
             variant="ghost"
             size="sm"
             className="hover:bg-white/10"
-            onClick={handleLogout}
+            onClick={() => setLogoutModalOpen(true)}
             title="Logout"
           >
             <LogOut className="w-5 h-5 text-red-600" />
           </Button>
+
+          {/* Logout Confirm Modal */}
+          <Dialog open={logoutModalOpen} onOpenChange={setLogoutModalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Logout</DialogTitle>
+              </DialogHeader>
+              <p>Are you sure you want to logout?</p>
+              <DialogFooter>
+                <Button variant="secondary" onClick={() => setLogoutModalOpen(false)}>Cancel</Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setLogoutModalOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  Logout
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
         </div>
       </div>
