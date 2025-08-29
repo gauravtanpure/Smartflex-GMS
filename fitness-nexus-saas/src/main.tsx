@@ -1,6 +1,5 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
-import { Analytics } from "@vercel/analytics/next"
 import './index.css'
 import { BrowserRouter } from 'react-router-dom';
 
