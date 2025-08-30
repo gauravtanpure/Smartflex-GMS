@@ -31,6 +31,7 @@ import PTORequest from "./pages/PTORequest";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import ManagePTORequests from "./pages/ManagePTORequests";
 import UserAttendance from "./pages/UserAttendance";
+import { Analytics } from '@vercel/analytics/react';
 
 
 const queryClient = new QueryClient();
@@ -103,6 +104,7 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>
+      <Analytics />
     </QueryClientProvider>
   );
 };
