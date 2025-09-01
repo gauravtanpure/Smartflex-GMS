@@ -1,11 +1,13 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCcw, PlusCircle, Camera, Users, CheckCircle, Clock, Loader2, UserCheck } from "lucide-react";
+import { RefreshCcw, PlusCircle, Camera, Users, CheckCircle, Clock, Loader2, UserCheck, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface User {
     id: number;
@@ -23,7 +25,7 @@ const Spinner = ({ size = "default", className = "" }: { size?: "sm" | "default"
         default: "w-6 h-6",
         lg: "w-8 h-8"
     };
-    
+
     return (
         <div className={`inline-flex items-center justify-center ${className}`}>
             <Loader2 className={`${sizeClasses[size]} animate-spin`} />
@@ -34,7 +36,7 @@ const Spinner = ({ size = "default", className = "" }: { size?: "sm" | "default"
 // Processing overlay component
 const ProcessingOverlay = ({ message, isVisible }: { message: string, isVisible: boolean }) => {
     if (!isVisible) return null;
-    
+
     return (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
             <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-2xl flex flex-col items-center space-y-4 max-w-xs mx-4">
@@ -67,6 +69,14 @@ export default function TrainerAttendance() {
     const [markMessage, setMarkMessage] = useState("");
 
     const [enrolledUsers, setEnrolledUsers] = useState<number[]>([]);
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 5; // change this number if you want more/less users per page
+    
+    // New state for search and filter
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'enrolled', 'pending'
+
 
     const startCamera = () => {
         navigator.mediaDevices.getUserMedia({ video: true })
@@ -132,8 +142,8 @@ export default function TrainerAttendance() {
 
                 const data = await res.json();
                 setEnrollMessage(data.message);
-                toast({ 
-                    title: "Enrollment Successful!", 
+                toast({
+                    title: "Enrollment Successful!",
                     description: data.message,
                     className: "border-green-200 bg-green-50 text-green-900"
                 });
@@ -204,12 +214,12 @@ export default function TrainerAttendance() {
 
                 const data = await res.json();
                 setMarkMessage(data.message);
-                toast({ 
-                    title: "Attendance Marked!", 
+                toast({
+                    title: "Attendance Marked!",
                     description: data.message,
                     className: "border-green-200 bg-green-50 text-green-900"
                 });
-                
+
                 setTimeout(() => {
                     stopCamera();
                     setIsMarkModalOpen(false);
@@ -240,7 +250,7 @@ export default function TrainerAttendance() {
             toast({ title: "Error", description: "Network error fetching users", variant: "destructive" });
         }
     };
-    
+
     const fetchEnrolledUsers = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -279,6 +289,39 @@ export default function TrainerAttendance() {
     const enrolledCount = enrolledUsers.length;
     const totalUsers = branchUsers.length;
 
+    // Filter and search logic using useMemo
+    const filteredUsers = useMemo(() => {
+        let tempUsers = branchUsers;
+
+        // Apply status filter
+        if (filterStatus === "enrolled") {
+            tempUsers = tempUsers.filter(user => enrolledUsers.includes(user.id));
+        } else if (filterStatus === "pending") {
+            tempUsers = tempUsers.filter(user => !enrolledUsers.includes(user.id));
+        }
+
+        // Apply search term
+        if (searchTerm) {
+            tempUsers = tempUsers.filter(user =>
+                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.id.toString().includes(searchTerm)
+            );
+        }
+
+        setCurrentPage(1); // Reset to first page on filter/search change
+        return tempUsers;
+    }, [branchUsers, enrolledUsers, filterStatus, searchTerm]);
+
+
+    // Pagination logic for filtered users
+    const totalFilteredUsers = filteredUsers.length;
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+    const totalPages = Math.ceil(totalFilteredUsers / usersPerPage);
+
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
             <div className="p-6 md:p-8 max-w-7xl mx-auto">
@@ -294,10 +337,10 @@ export default function TrainerAttendance() {
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <Button 
-                                onClick={fetchData} 
-                                disabled={loading} 
-                                variant="outline" 
+                            <Button
+                                onClick={fetchData}
+                                disabled={loading}
+                                variant="outline"
                                 className="shadow-sm hover:shadow-md transition-all duration-200"
                             >
                                 <RefreshCcw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -331,7 +374,7 @@ export default function TrainerAttendance() {
                             </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500 to-green-600 text-white">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
@@ -343,7 +386,7 @@ export default function TrainerAttendance() {
                             </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
@@ -367,6 +410,31 @@ export default function TrainerAttendance() {
                             Branch Users
                         </CardTitle>
                     </CardHeader>
+                    {/* New Search and Filter controls */}
+                    <div className="p-4 flex flex-col md:flex-row items-center gap-4">
+                        <Input
+                            placeholder="Search by name or ID..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1); // Reset to first page
+                            }}
+                            className="max-w-sm md:flex-1"
+                        />
+                        <div className="flex items-center gap-2 md:ml-auto w-full md:w-auto">
+                            <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            <Select onValueChange={(value) => setFilterStatus(value)} defaultValue="all">
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Users</SelectItem>
+                                    <SelectItem value="enrolled">Enrolled Users</SelectItem>
+                                    <SelectItem value="pending">Pending Enrollment</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                     <CardContent className="p-0">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center p-12">
@@ -385,9 +453,9 @@ export default function TrainerAttendance() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {branchUsers.map(user => (
-                                            <TableRow 
-                                                key={user.id} 
+                                        {currentUsers.map(user => (
+                                            <TableRow
+                                                key={user.id}
                                                 className="hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors duration-150"
                                             >
                                                 <TableCell>
@@ -459,8 +527,38 @@ export default function TrainerAttendance() {
                                                 </TableCell>
                                             </TableRow>
                                         ))}
+                                        {currentUsers.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                                    No users found.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
+                                {totalPages > 1 && (
+                                    <div className="flex justify-center items-center p-4 gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => prev - 1)}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                                            Page {currentPage} of {totalPages}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(prev => prev + 1)}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </CardContent>
@@ -485,14 +583,14 @@ export default function TrainerAttendance() {
                         </DialogHeader>
                         <div className="relative w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl overflow-hidden flex items-center justify-center shadow-inner">
                             <video ref={videoRef} autoPlay className="absolute w-full h-full object-cover rounded-xl" />
-                            <ProcessingOverlay 
-                                message="Processing face enrollment..." 
+                            <ProcessingOverlay
+                                message="Processing face enrollment..."
                                 isVisible={isProcessingEnroll}
                             />
                         </div>
                         <div className="mt-6 space-y-3">
-                            <Button 
-                                onClick={handleFaceEnroll} 
+                            <Button
+                                onClick={handleFaceEnroll}
                                 disabled={isProcessingEnroll}
                                 className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-200"
                             >
@@ -508,13 +606,13 @@ export default function TrainerAttendance() {
                                     </>
                                 )}
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => {
                                     setIsEnrollModalOpen(false);
                                     stopCamera();
                                     setIsProcessingEnroll(false);
-                                }} 
+                                }}
                                 disabled={isProcessingEnroll}
                                 className="w-full"
                             >
@@ -550,14 +648,14 @@ export default function TrainerAttendance() {
                         </DialogHeader>
                         <div className="relative w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl overflow-hidden flex items-center justify-center shadow-inner">
                             <video ref={videoRef} autoPlay className="absolute w-full h-full object-cover rounded-xl" />
-                            <ProcessingOverlay 
-                                message="Matching face and marking attendance..." 
+                            <ProcessingOverlay
+                                message="Matching face and marking attendance..."
                                 isVisible={isProcessingAttendance}
                             />
                         </div>
                         <div className="mt-6 space-y-3">
-                            <Button 
-                                onClick={handleFaceAttendance} 
+                            <Button
+                                onClick={handleFaceAttendance}
                                 disabled={isProcessingAttendance}
                                 className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 transition-all duration-200"
                             >
@@ -573,13 +671,13 @@ export default function TrainerAttendance() {
                                     </>
                                 )}
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => {
                                     setIsMarkModalOpen(false);
                                     stopCamera();
                                     setIsProcessingAttendance(false);
-                                }} 
+                                }}
                                 disabled={isProcessingAttendance}
                                 className="w-full"
                             >
