@@ -2,10 +2,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from sqlalchemy import func
 from .. import models, schemas, database, utils
 from datetime import date # Import date for filtering
+import uuid
 
 router = APIRouter(prefix="/fees", tags=["Fee Management"])
+
+# Dependency to get current superadmin
+def get_current_superadmin(current_user: schemas.UserResponse = Depends(utils.get_current_user)):
+    if current_user.role != "superadmin":
+        raise HTTPException(status_code=403, detail="Only superadmins can perform this action.")
+    return current_user
 
 def get_current_admin(current_user: schemas.UserResponse = Depends(utils.get_current_user)):
     if current_user.role not in ["admin", "superadmin"]:
@@ -19,8 +27,9 @@ def assign_fee(
     current_admin: schemas.UserResponse = Depends(get_current_admin)
 ):
     user = db.query(models.User).filter(models.User.id == fee.user_id).first()
-    if not user or (current_admin.role == "admin" and user.branch != current_admin.branch): # Admins can only assign to their branch users
-        raise HTTPException(status_code=404, detail="User not found in your branch or you don't have permission to assign fees to this user.")
+    # ⬅️ UPDATED LOGIC: Superadmins can assign to any user, admins only to their branch users
+    if current_admin.role == "admin" and user.branch != current_admin.branch:
+         raise HTTPException(status_code=403, detail="You do not have permission to assign fees to this user. Admins can only assign to users in their own branch.")
 
     new_fee = models.FeeAssignment(
         user_id=fee.user_id,
@@ -50,24 +59,26 @@ def assign_fee(
     return schemas.FeeAssignmentResponse(**new_fee_dict)
 
 # NEW ENDPOINT: Get all fee assignments for a branch (admin/superadmin only)
-@router.get("/branch", response_model=List[schemas.FeeAssignmentResponse])
+@router.get("/branch", response_model=List[schemas.FeeAssignmentNestedResponse])
 def get_branch_fees(
     db: Session = Depends(database.get_db),
-    current_admin: schemas.UserResponse = Depends(get_current_admin), # Only admins/superadmins can access this
-    user_id: Optional[int] = None, # Optional filter by user ID
-    is_paid: Optional[bool] = None # Optional filter by paid status
+    current_admin: schemas.UserResponse = Depends(get_current_admin),  # Only admins/superadmins can access this
+    user_id: Optional[int] = None,  # Optional filter by user ID
+    is_paid: Optional[bool] = None  # Optional filter by paid status
 ):
     """
     Allows branch admins and superadmins to view fee assignments for their branch.
     Superadmins can see fees from all branches.
     """
-    query = db.query(models.FeeAssignment).join(models.User, models.FeeAssignment.user_id == models.User.id) # Join with User model
+    query = db.query(models.FeeAssignment).join(
+        models.User, models.FeeAssignment.user_id == models.User.id
+    )
 
     if current_admin.role == "admin":
         if not current_admin.branch:
             raise HTTPException(status_code=400, detail="Admin's branch not specified.")
         query = query.filter(models.FeeAssignment.branch_name == current_admin.branch)
-    # Superadmins can view all fees, no branch filter needed for them
+    # Superadmins see all fees (no branch filter)
 
     if user_id is not None:
         query = query.filter(models.FeeAssignment.user_id == user_id)
@@ -76,26 +87,121 @@ def get_branch_fees(
 
     fees = query.all()
 
-    # Manually populate the 'user' field in each FeeAssignmentResponse
-    # This is necessary because SQLAlchemy's .all() won't automatically load relationships not explicitly defined in the query
-    # and we want to return the full UserResponse schema for the 'user' field.
     result = []
     for fee_assignment in fees:
         user_data = db.query(models.User).filter(models.User.id == fee_assignment.user_id).first()
         if user_data:
-            fee_assignment_dict = fee_assignment.__dict__.copy() # Ensure we're working with a copy
-            fee_assignment_dict['user'] = schemas.UserResponse(
-                id=user_data.id,
-                name=user_data.name,
-                email=user_data.email,
-                phone=user_data.phone,
-                role=user_data.role,
-                branch=user_data.branch
-            )
-            result.append(schemas.FeeAssignmentResponse(**fee_assignment_dict))
+            fee_assignment_dict = fee_assignment.__dict__.copy()
+            fee_assignment_dict["user"] = schemas.UserResponse.from_orm(user_data)
+            result.append(schemas.FeeAssignmentNestedResponse(**fee_assignment_dict))
         else:
-            result.append(schemas.FeeAssignmentResponse.from_orm(fee_assignment)) # Fallback if user not found (shouldn't happen with FK)
+            result.append(schemas.FeeAssignmentNestedResponse.from_orm(fee_assignment))
     return result
+
+# NEW ENDPOINT: Get all fees for all users (superadmin only)
+@router.get("/all", response_model=List[schemas.FeeAssignmentResponse])
+def get_all_fees(
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin)
+):
+    fees = db.query(models.FeeAssignment).all()
+    result = []
+    for fee in fees:
+        user = db.query(models.User).filter(models.User.id == fee.user_id).first()
+        assigned_by_user = db.query(models.User).filter(models.User.id == fee.assigned_by_user_id).first()
+        fee_dict = fee.__dict__.copy()
+        fee_dict['user_name'] = user.name if user else "N/A"
+        fee_dict['assigned_by_name'] = assigned_by_user.name if assigned_by_user else "N/A"
+        result.append(schemas.FeeAssignmentResponse(**fee_dict))
+    
+    return result
+
+# NEW ENDPOINT: Mark a fee as paid/unpaid and generate a receipt (superadmin only)
+@router.patch("/{fee_id}", response_model=schemas.FeeAssignmentResponse)
+def update_fee_status(
+    fee_id: int,
+    fee_update: schemas.FeeAssignmentUpdate,
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin)
+):
+    fee = db.query(models.FeeAssignment).filter(models.FeeAssignment.id == fee_id).first()
+    if not fee:
+        raise HTTPException(status_code=404, detail="Fee assignment not found.")
+    
+    fee.is_paid = fee_update.is_paid
+    fee.payment_type = fee_update.payment_type
+
+    if fee.is_paid and not db.query(models.FeeReceipt).filter(models.FeeReceipt.fee_assignment_id == fee.id).first():
+        # Generate a unique receipt number
+        receipt_number = f"REC-{uuid.uuid4().hex[:8].upper()}"
+        
+        # Create a receipt
+        receipt = models.FeeReceipt(
+            fee_assignment_id=fee.id,
+            user_id=fee.user_id,
+            amount=fee.amount,
+            payment_type=fee.payment_type,
+            receipt_number=receipt_number
+        )
+        db.add(receipt)
+
+    db.commit()
+    db.refresh(fee)
+
+    user = db.query(models.User).filter(models.User.id == fee.user_id).first()
+    assigned_by_user = db.query(models.User).filter(models.User.id == fee.assigned_by_user_id).first()
+    fee_dict = fee.__dict__.copy()
+    fee_dict['user_name'] = user.name if user else "N/A"
+    fee_dict['assigned_by_name'] = assigned_by_user.name if assigned_by_user else "N/A"
+
+    return schemas.FeeAssignmentResponse(**fee_dict)
+
+@router.get("/{fee_id}/receipt", response_model=schemas.FeeReceiptResponse)
+def get_fee_receipt(
+    fee_id: int,
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin)
+):
+    receipt = db.query(models.FeeReceipt).filter(models.FeeReceipt.fee_assignment_id == fee_id).first()
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found for this fee.")
+    
+    user = db.query(models.User).filter(models.User.id == receipt.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    receipt_data = schemas.FeeReceiptResponse(
+        receipt_number=receipt.receipt_number,
+        user_name=user.name,
+        fee_type=receipt.fee_assignment.fee_type,
+        amount=receipt.amount,
+        payment_type=receipt.payment_type,
+        payment_date=receipt.payment_date
+    )
+    return receipt_data
+
+
+@router.get("/analytics", response_model=schemas.FeeAnalyticsResponse)
+def get_fee_analytics(
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin)
+):
+    total_fees_assigned = db.query(func.sum(models.FeeAssignment.amount)).scalar() or 0
+    total_fees_paid = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.is_paid == True).scalar() or 0
+    total_outstanding_fees = total_fees_assigned - total_fees_paid
+
+    paid_by_card = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.payment_type == "Card").scalar() or 0
+    paid_by_cash = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.payment_type == "Cash").scalar() or 0
+    paid_by_upi = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.payment_type == "UPI").scalar() or 0
+
+    return schemas.FeeAnalyticsResponse(
+        total_fees_assigned=total_fees_assigned,
+        total_fees_paid=total_fees_paid,
+        total_outstanding_fees=total_outstanding_fees,
+        paid_by_card=paid_by_card,
+        paid_by_cash=paid_by_cash,
+        paid_by_upi=paid_by_upi
+    )
 
 # NEW ENDPOINT: Update fee status (admin/superadmin only)
 @router.put("/{fee_id}/status", response_model=schemas.FeeAssignmentResponse)
@@ -120,10 +226,10 @@ def update_fee_status(
     # Only allow updating is_paid status and potentially amount or due_date
     if update_data.is_paid is not None:
         db_fee.is_paid = update_data.is_paid
-    if update_data.amount is not None:
-        db_fee.amount = update_data.amount
-    if update_data.due_date is not None:
-        db_fee.due_date = update_data.due_date
+    # if update_data.amount is not None:
+    #     db_fee.amount = update_data.amount
+    # if update_data.due_date is not None:
+    #     db_fee.due_date = update_data.due_date
 
     db.commit()
     db.refresh(db_fee)

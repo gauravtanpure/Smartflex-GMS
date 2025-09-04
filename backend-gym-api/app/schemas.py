@@ -210,24 +210,64 @@ class FeeAssignmentCreate(BaseModel):
 class FeeAssignmentResponse(BaseModel):
     id: int
     user_id: int
+    user_name: Optional[str] = None # ⬅️ NEW: User's name to display on frontend
     assigned_by_user_id: int
-    branch_name: str
+    assigned_by_name: Optional[str] = None # ⬅️ NEW: Name of the person who assigned the fee
+    branch_name: Optional[str] = None
     fee_type: str
     amount: float
     due_date: date
     is_paid: bool
+    payment_type: Optional[str] = None # ⬅️ NEW: Payment type
     created_at: datetime
     updated_at: datetime
-    user: UserResponse # Add nested UserResponse schema
+    # user: UserResponse
 
     class Config:
-        from_attributes = True # Changed from orm_mode = True
+        from_attributes = True
 
-class FeeAssignmentUpdate(BaseModel):
-    fee_type: Optional[str] = None
-    amount: Optional[float] = None
-    due_date: Optional[date] = None
-    is_paid: Optional[bool] = None
+class FeeAssignmentNestedResponse(BaseModel):
+    id: int
+    user_id: int
+    assigned_by_user_id: int
+    branch_name: Optional[str] = None
+    fee_type: str
+    amount: float
+    due_date: date
+    is_paid: bool
+    payment_type: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    user: UserResponse   # nested user object
+
+    class Config:
+        from_attributes = True
+
+class FeeAssignmentUpdate(BaseModel): # ⬅️ NEW: Schema to update fee status
+    is_paid: bool
+    payment_type: Optional[str] = None
+
+class FeeReceiptResponse(BaseModel): # ⬅️ NEW: Schema for the receipt response
+    receipt_number: str
+    user_name: str
+    fee_type: str
+    amount: float
+    payment_type: str
+    payment_date: datetime
+    
+    class Config:
+        from_attributes = True
+        
+class FeeAnalyticsResponse(BaseModel): # ⬅️ NEW: Schema for analytics
+    total_fees_assigned: float
+    total_fees_paid: float
+    total_outstanding_fees: float
+    paid_by_card: float
+    paid_by_cash: float
+    paid_by_upi: float
+
+    class Config:
+        from_attributes = True
 
 class UserNotificationCreate(BaseModel):
     user_id: int

@@ -230,13 +230,28 @@ class FeeAssignment(Base):
     amount = Column(Float, nullable=False)
     due_date = Column(Date, nullable=False)
     is_paid = Column(Boolean, default=False)
+    payment_type = Column(String, nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     user_assigned_to = relationship("User", foreign_keys=[user_id], back_populates="fee_assignments")
     assigned_by_user = relationship("User", foreign_keys=[assigned_by_user_id], back_populates="assigned_fees")
+    receipts = relationship("FeeReceipt", back_populates="fee_assignment", cascade="all, delete-orphan") # ⬅️ NEW: Relationship to receipts
 
+class FeeReceipt(Base): # ⬅️ NEW: Table for storing receipts
+    __tablename__ = "fee_receipts"
 
+    id = Column(Integer, primary_key=True, index=True)
+    fee_assignment_id = Column(Integer, ForeignKey("fee_assignments.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    payment_type = Column(String, nullable=False)
+    payment_date = Column(DateTime, default=func.now())
+    receipt_number = Column(String, unique=True, nullable=False)
+
+    fee_assignment = relationship("FeeAssignment", back_populates="receipts")
+    user = relationship("User")
+    
 class UserNotification(Base):
     __tablename__ = "user_notifications"
 
