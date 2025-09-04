@@ -19,6 +19,7 @@ import TrainerUsers from "./pages/TrainerUsers";
 import TrainerAttendance from "./pages/TrainerAttendance";
 import ProfileCompletion from "./pages/ProfileCompletion";
 import ManageFees from "./pages/ManageFees";
+import SuperadminBilling from "./pages/SuperadminBilling";
 import ManageSessions from "./pages/ManageSessions";
 import AssignDiet from "./pages/AssignDiet";
 import AssignExercise from "./pages/AssignExercise";
@@ -91,6 +92,7 @@ const App = () => {
           <Route path="/trainer/attendance" element={renderProtectedRoute(TrainerAttendance, ["trainer", "admin", "superadmin"])} />
           <Route path="/trainer/sessions" element={renderProtectedRoute(ManageSessions, ["trainer", "admin", "superadmin"])} />
           <Route path="/manage-fees" element={renderProtectedRoute(ManageFees, ["admin", "superadmin"])} />
+          <Route path="/superadmin-billing" element={renderProtectedRoute(SuperadminBilling, ["superadmin"])} />
           <Route path="/trainer/assign-diet" element={renderProtectedRoute(AssignDiet, ["trainer", "admin", "superadmin"])} />
           <Route path="/trainer/assign-exercise" element={renderProtectedRoute(AssignExercise, ["trainer", "admin", "superadmin"])} />
           <Route path="/manage-membership-plans" element={renderProtectedRoute(ManageMembershipPlans, ["admin", "superadmin"])} />

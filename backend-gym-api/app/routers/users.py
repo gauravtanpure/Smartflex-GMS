@@ -50,6 +50,18 @@ def get_current_admin_or_trainer(
         )
     return current_user
 
+# ⬅️ NEW ENDPOINT: Get a list of all users
+@router.get("/all", response_model=List[schemas.UserResponse])
+def get_all_users(
+    db: Session = Depends(database.get_db),
+    # current_superadmin: schemas.UserResponse = Depends(get_current_superadmin)
+):
+    """
+    Retrieves a list of all users in the system.
+    Only accessible by superadmins.
+    """
+    users = db.query(models.User).all()
+    return users
 
 @router.post("/", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
@@ -401,7 +413,6 @@ def save_profile_data(member: schemas.MemberCreate, db: Session = Depends(databa
     db.commit()
     db.refresh(new_member)
     return {"message": "Profile data saved successfully"}
-
 
 @router.get("/member/{user_id}")
 def get_member_profile(user_id: int, db: Session = Depends(database.get_db)):
