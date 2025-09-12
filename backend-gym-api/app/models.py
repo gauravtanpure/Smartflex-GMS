@@ -19,6 +19,10 @@ class User(Base):
     branch = Column(String, nullable=True)
     face_encoding = Column(LargeBinary, nullable=True)
 
+    # 🚨 Add these new columns for email verification 🚨
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String, unique=True, nullable=True)
+
     # Add relationships for diet and exercise plans
     diet_plans = relationship("DietPlan", back_populates="user")
     exercise_plans = relationship("ExercisePlan", back_populates="user")

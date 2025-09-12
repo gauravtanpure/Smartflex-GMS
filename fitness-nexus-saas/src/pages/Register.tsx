@@ -17,13 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, EyeOff, Loader2 } from "lucide-react"; // ✅ Added Loader2
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false); // ✅ Loading state
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -49,7 +49,7 @@ export default function Register() {
       return;
     }
 
-    setLoading(true); // ✅ Start loading
+    setLoading(true);
 
     const dataToSend = {
       name: formData.name,
@@ -70,9 +70,10 @@ export default function Register() {
       if (res.ok) {
         toast({
           title: "Registration Successful",
-          description: "Welcome! You can now log in.",
+          description: "Please check your email for a verification link.",
         });
-        navigate("/login");
+        // You can navigate to a "check your email" page or just keep the user on the same page with the message
+        // navigate("/check-email-page"); 
       } else {
         const errorData = await res.json();
         toast({
@@ -88,7 +89,7 @@ export default function Register() {
         variant: "destructive",
       });
     } finally {
-      setLoading(false); // ✅ Stop loading
+      setLoading(false);
     }
   };
 
