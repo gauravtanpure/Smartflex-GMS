@@ -4,6 +4,8 @@ import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { DollarSign, XCircle, Banknote, Loader2, Info, FileWarning, ReceiptText, UserPlus, Users, Search, ChevronLeft, ChevronRight, Filter } from "lucide-react";
@@ -167,23 +169,88 @@ export default function SuperadminBilling() {
     }
   };
 
-  const handleGenerateReceipt = async (feeId: number) => {
+  const handleGenerateReceipt = async (fee: Fee) => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/fees/${feeId}/receipt`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob',
+      const doc = new jsPDF();
+
+      // Load logo from public folder (e.g., public/logo.png)
+      const logoUrl = "./logo2.png"; // change to your actual filename
+      const logoImg = await fetch(logoUrl)
+        .then((res) => res.blob())
+        .then(
+          (blob) =>
+            new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            })
+        );
+
+      // Add Logo
+      const imgWidth = 30;
+      const imgHeight = 30;
+      doc.addImage(logoImg, "PNG", 14, 10, imgWidth, imgHeight);
+
+      // Header: SmartFlex Fitness
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("SmartFlex Fitness", 50, 20);
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "italic");
+      doc.text("Official Payment Receipt", 50, 28);
+
+      doc.line(14, 40, 200, 40);
+
+      // Receipt Data
+      const receiptData = [
+        ["Receipt ID", `#${fee.id}`],
+        ["Member Name", fee.user_name || "N/A"],
+        ["Branch", fee.branch_name],
+        ["Fee Type", fee.fee_type],
+        ["Amount", `₹${fee.amount.toFixed(2)}`],
+        ["Due Date", fee.due_date],
+        ["Status", fee.is_paid ? "Paid" : "Unpaid"],
+        ["Payment Type", fee.payment_type || "N/A"],
+        ["Assigned By", fee.assigned_by_name],
+        ["Issued Date", new Date().toLocaleDateString()],
+      ];
+
+      autoTable(doc, {
+        startY: 50,
+        head: [["Field", "Details"]],
+        body: receiptData,
+        styles: { fontSize: 11, cellPadding: 4 },
+        headStyles: { fillColor: [255, 102, 0], halign: "center" },
+        columnStyles: {
+          0: { fontStyle: "bold", cellWidth: 60 },
+          1: { cellWidth: 120 },
+        },
       });
-      const blob = new Blob([res.data], { type: 'text/plain' });
-      saveAs(blob, `receipt-${feeId}.txt`);
-      
+
+      // Footer
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setFontSize(10);
+      doc.setFont("poppins", "normal");
+      doc.text("Thank you for choosing SmartFlex Fitness", 14, pageHeight - 25);
+      doc.text("Stay Fit. Stay Strong.", 14, pageHeight - 20);
+      doc.text(
+        "This is a computer-generated receipt and does not require a signature.",
+        14,
+        pageHeight - 15
+      );
+
+      // Save
+      doc.save(`SmartFlex_Receipt_${fee.id}.pdf`);
+
       toast({
         title: "Receipt Generated",
-        description: "Your receipt has been downloaded.",
+        description: "Official SmartFlex PDF receipt has been downloaded.",
       });
     } catch (err: any) {
       toast({
         title: "Error",
-        description: `Failed to generate receipt: ${err.response?.data?.detail || err.message}`,
+        description: `Failed to generate receipt: ${err.message}`,
         variant: "destructive",
       });
     }
@@ -530,7 +597,7 @@ export default function SuperadminBilling() {
                             </Dialog>
                           )}
                           {f.is_paid && (
-                            <Button size="sm" variant="outline" onClick={() => handleGenerateReceipt(f.id)}>
+                            <Button size="sm" variant="outline" onClick={() => handleGenerateReceipt(f)}>
                               <ReceiptText className="w-4 h-4 mr-1" />
                               Receipt
                             </Button>

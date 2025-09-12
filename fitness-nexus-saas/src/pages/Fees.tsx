@@ -116,7 +116,7 @@ export default function Fees() {
 
   // Calculate totals
   const totalOutstandingFees = fees.filter(f => !f.is_paid).reduce((sum, f) => sum + f.amount, 0);
-  const totalPaidFees = fees.filter(f => f.is_paid).reduce((sum, f) => sum + f.amount, 0);
+  // const totalPaidFees = fees.filter(f => f.is_paid).reduce((sum, f) => sum + f.amount, 0);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-poppins">
@@ -131,10 +131,10 @@ export default function Fees() {
             <Wallet className="w-5 h-5 text-yellow-600" />
             <span className="text-sm font-semibold text-gray-700">Outstanding: <span className="text-lg font-boldd text-yellow-700">₹{totalOutstandingFees.toLocaleString()}</span></span>
           </Card>
-          <Card className="p-3 shadow-sm rounded-lg flex items-center space-x-2 bg-white border-green-200">
+          {/* <Card className="p-3 shadow-sm rounded-lg flex items-center space-x-2 bg-white border-green-200">
             <Banknote className="w-5 h-5 text-green-600" />
             <span className="text-sm font-semibold text-gray-700">Total Paid: <span className="text-lg font-boldd text-green-700">₹{totalPaidFees.toLocaleString()}</span></span>
-          </Card>
+          </Card> */}
         </div>
       </div>
 
@@ -206,7 +206,7 @@ export default function Fees() {
                         </div>
                       </TableCell>
                       <TableCell className="py-3 px-4">
-                        <Badge variant={f.is_paid ? "success" : "destructive"} className="text-xs font-semibold px-2 py-1">
+                        <Badge variant={f.is_paid ? "default" : "destructive"} className="text-xs font-semibold px-2 py-1">
                           {f.is_paid ? "Paid" : "Unpaid"}
                         </Badge>
                       </TableCell>
