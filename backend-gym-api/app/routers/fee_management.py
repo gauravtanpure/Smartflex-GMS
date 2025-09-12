@@ -318,3 +318,67 @@ def mark_notification_read(
     db.commit()
     db.refresh(notif)
     return notif
+
+import razorpay
+from fastapi import Request
+from starlette.responses import JSONResponse
+import os
+
+razorpay_client = razorpay.Client(
+    auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
+)
+
+# ✅ Create Razorpay Order
+@router.post("/{fee_id}/create-order")
+def create_order(fee_id: int, db: Session = Depends(database.get_db), current_user: schemas.UserResponse = Depends(utils.get_current_user)):
+    fee = db.query(models.FeeAssignment).filter(models.FeeAssignment.id == fee_id, models.FeeAssignment.user_id == current_user.id).first()
+    if not fee:
+        raise HTTPException(status_code=404, detail="Fee not found or not assigned to you.")
+
+    if fee.is_paid:
+        raise HTTPException(status_code=400, detail="Fee already paid.")
+
+    # Create Razorpay order
+    order_data = {
+        "amount": fee.amount * 100,  # amount in paise
+        "currency": "INR",
+        "receipt": f"receipt_fee_{fee.id}",
+        "payment_capture": 1
+    }
+    order = razorpay_client.order.create(order_data)
+
+    return {"order_id": order["id"], "amount": order_data["amount"], "currency": order_data["currency"], "key": os.getenv("RAZORPAY_KEY_ID")}
+
+#---Payment Gateway Integration
+
+# ✅ Verify Payment
+@router.post("/verify-payment")
+async def verify_payment(request: Request, db: Session = Depends(database.get_db), current_user: schemas.UserResponse = Depends(utils.get_current_user)):
+    data = await request.json()
+
+    razorpay_order_id = data.get("razorpay_order_id")
+    razorpay_payment_id = data.get("razorpay_payment_id")
+    razorpay_signature = data.get("razorpay_signature")
+    fee_id = data.get("fee_id")
+
+    try:
+        # Verify signature
+        params_dict = {
+            "razorpay_order_id": razorpay_order_id,
+            "razorpay_payment_id": razorpay_payment_id,
+            "razorpay_signature": razorpay_signature
+        }
+        razorpay_client.utility.verify_payment_signature(params_dict)
+
+        # Update DB fee as paid
+        fee = db.query(models.FeeAssignment).filter(models.FeeAssignment.id == fee_id, models.FeeAssignment.user_id == current_user.id).first()
+        if not fee:
+            raise HTTPException(status_code=404, detail="Fee not found")
+
+        fee.is_paid = True
+        fee.payment_type = "Razorpay"
+        db.commit()
+
+        return {"status": "success", "message": "Payment verified and fee updated!"}
+    except:
+        raise HTTPException(status_code=400, detail="Payment verification failed.")
