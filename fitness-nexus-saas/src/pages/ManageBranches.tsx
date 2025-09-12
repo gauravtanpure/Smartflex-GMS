@@ -180,7 +180,7 @@ export default function ManageBranches() {
       await fetchAdmins();
       toast({
         title: "Success",
-        description: "Admin added successfully ✅",
+        description: "Admin added successfully and Verification link sent✅",
         variant: "success",
       });
       closeDialog();

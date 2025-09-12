@@ -8,11 +8,9 @@ from sqlalchemy.orm import Session
 from . import schemas, database, models
 from dotenv import load_dotenv
 import os
-# --- NEW IMPORTS FOR EMAIL ---
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-# --- END NEW IMPORTS ---
 
 load_dotenv()
 
@@ -23,7 +21,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login") # Point to your login endpoint
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
@@ -44,17 +42,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def decode_access_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        # Extract email, role, and branch
         email: str = payload.get("sub")
         role: str = payload.get("role")
-        branch: Optional[str] = payload.get("branch") # Extract branch
+        branch: Optional[str] = payload.get("branch")
         if email is None or role is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return schemas.TokenData(email=email, role=role, branch=branch) # Return TokenData
+        return schemas.TokenData(email=email, role=role, branch=branch)
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -67,11 +64,15 @@ def get_current_user(
 ):
     token_data = decode_access_token(token)
     
-    # Try to find user in the 'users' table
     user = db.query(models.User).filter(models.User.email == token_data.email).first()
     if user:
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Please verify your email address to access this resource.",
+            )
         return schemas.UserResponse(
-            id=user.id, # <--- ADDED: Pass the user's ID
+            id=user.id,
             name=user.name,
             email=user.email,
             phone=user.phone,
@@ -79,15 +80,14 @@ def get_current_user(
             branch=user.branch
         )
     
-    # If not a regular user, try to find in the 'trainers' table
     trainer = db.query(models.Trainer).filter(models.Trainer.email == token_data.email).first()
     if trainer:
-        return schemas.UserResponse( # Re-use UserResponse for trainer data in token
-            id=trainer.id, # <--- ADDED: Pass the trainer's ID
+        return schemas.UserResponse(
+            id=trainer.id,
             name=trainer.name,
             email=trainer.email,
             phone=trainer.phone,
-            role="trainer", # Explicitly set role as 'trainer'
+            role="trainer",
             branch=trainer.branch_name
         )
     
@@ -97,12 +97,7 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-# --- NEW FUNCTION FOR SENDING EMAILS ---
 def send_email(to_email: str, subject: str, html_content: str):
-    """
-    Sends an HTML email using SMTP settings from environment variables.
-    """
-    # Get email configuration from environment variables
     email_host = os.getenv("EMAIL_HOST")
     email_port = int(os.getenv("EMAIL_PORT", 587))
     email_user = os.getenv("EMAIL_USER")
@@ -113,22 +108,18 @@ def send_email(to_email: str, subject: str, html_content: str):
         print("Email configuration is missing. Skipping email sending.")
         return
 
-    # Create the email message
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
     message["From"] = f"{email_from_name} <{email_user}>"
     message["To"] = to_email
 
-    # Attach the HTML content
     message.attach(MIMEText(html_content, "html"))
 
     try:
-        # Connect to the SMTP server and send the email
         with smtplib.SMTP(email_host, email_port) as server:
-            server.starttls()  # Secure the connection
+            server.starttls()
             server.login(email_user, email_pass)
             server.sendmail(email_user, to_email, message.as_string())
         print(f"Email sent successfully to {to_email}")
     except Exception as e:
         print(f"Error sending email to {to_email}: {e}")
-# --- END NEW FUNCTION ---

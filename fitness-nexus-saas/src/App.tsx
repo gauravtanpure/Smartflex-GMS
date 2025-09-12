@@ -33,7 +33,7 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import ManagePTORequests from "./pages/ManagePTORequests";
 import UserAttendance from "./pages/UserAttendance";
 import { Analytics } from '@vercel/analytics/react';
-
+import VerifyEmail from './pages/VerifyEmail';
 
 const queryClient = new QueryClient();
 
@@ -76,6 +76,7 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           {/* Protected Routes */}

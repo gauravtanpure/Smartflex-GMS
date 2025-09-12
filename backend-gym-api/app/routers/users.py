@@ -7,12 +7,13 @@ from datetime import date, datetime
 from .. import models, schemas, database, utils
 from app.schemas import BulkAttendanceEntry
 import os
+import secrets
+import cloudinary
+import cloudinary.uploader
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
-
-import cloudinary
-import cloudinary.uploader
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -50,27 +51,23 @@ def get_current_admin_or_trainer(
         )
     return current_user
 
-# ⬅️ NEW ENDPOINT: Get a list of all users
+
 @router.get("/all", response_model=List[schemas.UserResponse])
 def get_all_users(
     db: Session = Depends(database.get_db),
-    # current_superadmin: schemas.UserResponse = Depends(get_current_superadmin)
 ):
-    """
-    Retrieves a list of all users in the system.
-    Only accessible by superadmins.
-    """
     users = db.query(models.User).all()
     return users
 
-@router.post("/", response_model=schemas.UserResponse)
+@router.post("/")
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     existing_user = db.query(models.User).filter(models.User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = utils.get_password_hash(user.password)
-
+    verification_token = secrets.token_urlsafe(32)
+    
     db_user = models.User(
         name=user.name,
         email=user.email,
@@ -78,12 +75,50 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
         phone=user.phone,
         role=user.role,
         gender=user.gender,
-        branch=user.branch
+        branch=user.branch,
+        is_verified=False,
+        verification_token=verification_token
     )
+    
+    # ⬅️ Add user to session but DON'T commit yet
     db.add(db_user)
-    db.commit()
+    
+    frontend_url = os.getenv("FRONTEND_URL")
+    if not frontend_url:
+        raise HTTPException(status_code=500, detail="FRONTEND_URL environment variable is not set.")
+
+    verification_url = f"{frontend_url}/verify-email?token={verification_token}"
+    email_content = f"""
+    <h1>Welcome to SmartFlex Fitness!</h1>
+    <p>Please click the link below to verify your email address and activate your account:</p>
+    <a href="{verification_url}">Verify Email Address</a>
+    """
+    
+    try:
+        utils.send_email(to_email=user.email, subject="Verify Your SmartFlex Account", html_content=email_content)
+        db.commit() # ⬅️ Commit only after email is successfully sent
+    except Exception as e:
+        db.rollback() # ⬅️ Rollback if email sending fails
+        raise HTTPException(status_code=500, detail=f"Failed to send verification email. Please try again. Error: {e}")
+        
     db.refresh(db_user)
-    return db_user
+    return {"message": "User registered successfully. Please check your email for a verification link."}
+
+
+@router.get("/verify", status_code=status.HTTP_200_OK)
+def verify_email(token: str, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.verification_token == token).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Invalid or expired verification token.")
+    
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="Email is already verified.")
+
+    user.is_verified = True
+    user.verification_token = None
+    db.commit()
+    return {"message": "Email verified successfully! You can now log in."}
 
 
 @router.get("/branch-enrollments", response_model=List[schemas.EnrolledUserInfo])
@@ -400,7 +435,6 @@ def delete_user(user_id: int, db: Session = Depends(database.get_db)):
 def save_profile_data(member: schemas.MemberCreate, db: Session = Depends(database.get_db)):
     existing = db.query(models.Member).filter(models.Member.user_id == member.user_id).first()
     if existing:
-        # If profile exists, update it instead of raising an error
         update_data = member.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(existing, key, value)
@@ -438,7 +472,7 @@ def bulk_attendance(
         ).first()
 
         if not user:
-            continue  # Skip invalid users
+            continue
 
         already_marked = db.query(models.UserAttendance).filter(
             models.UserAttendance.user_id == entry.user_id,
@@ -461,7 +495,6 @@ def bulk_attendance(
     return {"message": "Attendance submitted successfully"}
 
 
-# Configure Cloudinary once (usually in settings.py or main.py)
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -476,14 +509,12 @@ def upload_profile_picture(
     db: Session = Depends(database.get_db),
     current_user: schemas.UserResponse = Depends(get_current_active_user)
 ):
-    # Upload to cloudinary
     result = cloudinary.uploader.upload(file.file, folder="profile_pictures")
 
     profile_url = result.get("secure_url")
     if not profile_url:
         raise HTTPException(status_code=500, detail="Image upload failed")
 
-    # Save to DB
     member = db.query(models.Member).filter(models.Member.user_id == user_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
