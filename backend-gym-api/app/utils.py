@@ -8,6 +8,11 @@ from sqlalchemy.orm import Session
 from . import schemas, database, models
 from dotenv import load_dotenv
 import os
+# --- NEW IMPORTS FOR EMAIL ---
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+# --- END NEW IMPORTS ---
 
 load_dotenv()
 
@@ -92,3 +97,38 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+# --- NEW FUNCTION FOR SENDING EMAILS ---
+def send_email(to_email: str, subject: str, html_content: str):
+    """
+    Sends an HTML email using SMTP settings from environment variables.
+    """
+    # Get email configuration from environment variables
+    email_host = os.getenv("EMAIL_HOST")
+    email_port = int(os.getenv("EMAIL_PORT", 587))
+    email_user = os.getenv("EMAIL_USER")
+    email_pass = os.getenv("EMAIL_PASS")
+    email_from_name = os.getenv("EMAIL_FROM_NAME")
+
+    if not all([email_host, email_port, email_user, email_pass, email_from_name]):
+        print("Email configuration is missing. Skipping email sending.")
+        return
+
+    # Create the email message
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = f"{email_from_name} <{email_user}>"
+    message["To"] = to_email
+
+    # Attach the HTML content
+    message.attach(MIMEText(html_content, "html"))
+
+    try:
+        # Connect to the SMTP server and send the email
+        with smtplib.SMTP(email_host, email_port) as server:
+            server.starttls()  # Secure the connection
+            server.login(email_user, email_pass)
+            server.sendmail(email_user, to_email, message.as_string())
+        print(f"Email sent successfully to {to_email}")
+    except Exception as e:
+        print(f"Error sending email to {to_email}: {e}")
+# --- END NEW FUNCTION ---

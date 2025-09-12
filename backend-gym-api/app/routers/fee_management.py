@@ -4,10 +4,82 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import func
 from .. import models, schemas, database, utils
-from datetime import date # Import date for filtering
+from datetime import date, datetime # Import date and datetime
 import uuid
 
 router = APIRouter(prefix="/fees", tags=["Fee Management"])
+
+# --- NEW HELPER FUNCTION FOR SENDING PAYMENT EMAIL ---
+def send_payment_receipt_email(db: Session, fee: models.FeeAssignment):
+    """
+    Fetches user details and sends a payment confirmation email.
+    """
+    user = db.query(models.User).filter(models.User.id == fee.user_id).first()
+    if not user:
+        print(f"Could not find user with ID {fee.user_id} to send payment receipt.")
+        return
+
+    subject = f"Payment Confirmation - {fee.fee_type}"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Confirmation</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ width: 90%; max-width: 600px; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }}
+            .header {{ background-color: #FF6600; color: white; padding: 20px; text-align: center; }}
+            .content {{ padding: 20px; }}
+            .footer {{ background-color: #f2f2f2; padding: 10px; text-align: center; font-size: 12px; color: #777; }}
+            .details-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+            .details-table th, .details-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            .details-table th {{ background-color: #f9f9f9; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Payment Successful!</h1>
+            </div>
+            <div class="content">
+                <p>Dear {user.name},</p>
+                <p>We have successfully received your payment. Thank you for your promptness.</p>
+                <p>Here are the details of your transaction:</p>
+                <table class="details-table">
+                    <tr>
+                        <th>Fee Type</th>
+                        <td>{fee.fee_type}</td>
+                    </tr>
+                    <tr>
+                        <th>Amount Paid</th>
+                        <td>₹{fee.amount:.2f}</td>
+                    </tr>
+                    <tr>
+                        <th>Payment Method</th>
+                        <td>{fee.payment_type or 'N/A'}</td>
+                    </tr>
+                     <tr>
+                        <th>Payment Date</th>
+                        <td>{datetime.utcnow().strftime('%d %B %Y')}</td>
+                    </tr>
+                </table>
+                <p>Your account is up to date. If you have any questions, feel free to contact us.</p>
+                <p>Stay Fit, Stay Healthy!<br>The SmartFlex Fitness Team</p>
+            </div>
+            <div class="footer">
+                <p>&copy; {datetime.utcnow().year} SmartFlex Fitness. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    utils.send_email(to_email=user.email, subject=subject, html_content=html_content)
+# --- END NEW HELPER ---
+
 
 # Dependency to get current superadmin
 def get_current_superadmin(current_user: schemas.UserResponse = Depends(utils.get_current_user)):
@@ -148,6 +220,11 @@ def update_fee_status(
     db.commit()
     db.refresh(fee)
 
+    # --- ADDED: Send email if fee is marked as paid ---
+    if fee.is_paid:
+        send_payment_receipt_email(db, fee)
+    # --- END ---
+
     user = db.query(models.User).filter(models.User.id == fee.user_id).first()
     assigned_by_user = db.query(models.User).filter(models.User.id == fee.assigned_by_user_id).first()
     fee_dict = fee.__dict__.copy()
@@ -226,6 +303,9 @@ def update_fee_status(
     # Only allow updating is_paid status and potentially amount or due_date
     if update_data.is_paid is not None:
         db_fee.is_paid = update_data.is_paid
+        # --- ADDED: Set payment type for manual marking ---
+        if db_fee.is_paid:
+            db_fee.payment_type = "Manual" # Or you could pass this from the frontend
     # if update_data.amount is not None:
     #     db_fee.amount = update_data.amount
     # if update_data.due_date is not None:
@@ -234,6 +314,11 @@ def update_fee_status(
     db.commit()
     db.refresh(db_fee)
     
+    # --- ADDED: Send email if fee is marked as paid ---
+    if db_fee.is_paid:
+        send_payment_receipt_email(db, db_fee)
+    # --- END ---
+
     # Manually populate the 'user' field before returning
     user_data = db.query(models.User).filter(models.User.id == db_fee.user_id).first()
     if user_data:
@@ -376,8 +461,12 @@ async def verify_payment(request: Request, db: Session = Depends(database.get_db
             raise HTTPException(status_code=404, detail="Fee not found")
 
         fee.is_paid = True
-        fee.payment_type = "Razorpay"
+        fee.payment_type = "Razorpay" # Or another identifier like 'Online'
         db.commit()
+
+        # --- ADDED: Send email after successful online payment ---
+        send_payment_receipt_email(db, fee)
+        # --- END ---
 
         return {"status": "success", "message": "Payment verified and fee updated!"}
     except:
