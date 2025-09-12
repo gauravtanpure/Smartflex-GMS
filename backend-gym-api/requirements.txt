@@ -57,3 +57,4 @@ h11==0.14.0
 
 # --- Production server ---
 gunicorn==21.2.0
+razorpay==2.8.0

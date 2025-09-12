@@ -34,6 +34,58 @@ export default function Fees() {
   const { toast } = useToast();
   const token = localStorage.getItem("token");
 
+  const handlePayment = async (fee: Fee) => {
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/fees/${fee.id}/create-order`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const { order_id, amount, currency, key } = res.data;
+
+      const options = {
+        key,
+        amount,
+        currency,
+        name: "Smartflex Fitness",
+        description: `Payment for ${fee.fee_type}`,
+        order_id,
+        handler: async function (response: any) {
+          // Verify payment
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/fees/verify-payment`,
+            {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              fee_id: fee.id
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          toast({ title: "Success", description: "Payment completed successfully!" });
+          fetchMyFees();
+        },
+        prefill: {
+          name: "User Name",
+          email: "user@example.com",
+          contact: "9876543210"
+        },
+        theme: { color: "#F37254" }
+      };
+
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.open();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Payment failed: ${err.response?.data?.detail || err.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+
   const fetchMyFees = async () => {
     setLoading(true);
     setError(null);
@@ -207,7 +259,10 @@ export default function Fees() {
                             </div>
                             <DialogFooter className="mt-4">
                               {!f.is_paid && (
-                                <Button className="bg-logoOrange hover:bg-logoOrange/90 transition-colors">
+                                <Button
+                                  className="bg-logoOrange hover:bg-logoOrange/90 transition-colors"
+                                  onClick={() => handlePayment(f)}
+                                >
                                   <Wallet className="w-4 h-4 mr-2" /> Make Payment
                                 </Button>
                               )}

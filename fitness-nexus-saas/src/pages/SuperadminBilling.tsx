@@ -483,7 +483,7 @@ export default function SuperadminBilling() {
                       <TableCell>₹{f.amount.toFixed(2)}</TableCell>
                       <TableCell>{f.due_date}</TableCell>
                       <TableCell>
-                        <Badge variant={f.is_paid ? "success" : "destructive"}>
+                        <Badge variant={f.is_paid ? "default" : "destructive"}>
                           {f.is_paid ? "Paid" : "Unpaid"}
                         </Badge>
                       </TableCell>
