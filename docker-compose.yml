@@ -22,7 +22,7 @@ services:
     depends_on:
       - db
     env_file:
-      - .env.backend
+      - ./backend-gym-api/.env.backend
     environment:
       DATABASE_URL: postgresql://myuser:mypassword@db:5432/mydb
     ports:
@@ -41,7 +41,7 @@ services:
     depends_on:
       - backend
     env_file:
-      - .env.frontend
+      - ./fitness-nexus-saas/.env.frontend
     environment:
       # override inside docker so frontend talks to backend container
       VITE_API_URL: http://backend:8000
