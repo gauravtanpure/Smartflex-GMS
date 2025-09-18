@@ -201,7 +201,7 @@ export default function TrainerAttendance() {
 
             try {
                 const token = localStorage.getItem("token");
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/face-attendance`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/face-attendance/`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
