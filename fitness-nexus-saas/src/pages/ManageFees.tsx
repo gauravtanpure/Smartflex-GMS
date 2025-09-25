@@ -124,7 +124,7 @@ export default function ManageFees() {
     }
 
     axios
-      .post(`${import.meta.env.VITE_API_URL}/fees`, {
+      .post(`${import.meta.env.VITE_API_URL}/fees/`, {
         user_id: parseInt(form.user_id),
         fee_type: form.fee_type,
         amount: parseFloat(form.amount),
@@ -231,7 +231,7 @@ export default function ManageFees() {
         <CardHeader>
           <CardTitle className="text-xl sm:text-2xl font-boldd text-logoOrange">Assign New Fee</CardTitle>
         </CardHeader>
-        <CardContent className="p-0 pt-4">
+        <CardContent className="p-4 pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <div className="space-y-1">
               <Label htmlFor="user-select">Select User</Label>
