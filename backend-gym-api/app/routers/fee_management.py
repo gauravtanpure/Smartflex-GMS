@@ -270,6 +270,7 @@ def get_fee_analytics(
     paid_by_card = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.payment_type == "Card").scalar() or 0
     paid_by_cash = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.payment_type == "Cash").scalar() or 0
     paid_by_upi = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.payment_type == "UPI").scalar() or 0
+    paid_by_cheque = db.query(func.sum(models.FeeAssignment.amount)).filter(models.FeeAssignment.payment_type == "Cheque").scalar() or 0
 
     return schemas.FeeAnalyticsResponse(
         total_fees_assigned=total_fees_assigned,
@@ -277,8 +278,114 @@ def get_fee_analytics(
         total_outstanding_fees=total_outstanding_fees,
         paid_by_card=paid_by_card,
         paid_by_cash=paid_by_cash,
-        paid_by_upi=paid_by_upi
+        paid_by_upi=paid_by_upi,
+        paid_by_cheque=paid_by_cheque
     )
+
+from io import BytesIO
+from openpyxl import Workbook
+from fastapi.responses import StreamingResponse
+from typing import Dict, List
+
+from fastapi import Query
+
+@router.get("/monthly-revenue", response_model=List[schemas.MonthlyRevenueResponse])
+def get_monthly_revenue(
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin),
+    start_month: str = Query(None, description="YYYY-MM"),
+    end_month: str = Query(None, description="YYYY-MM")
+):
+    revenue_map: Dict[str, float] = {}
+
+    try:
+        receipts = db.query(models.FeeReceipt).filter(models.FeeReceipt.payment_date != None).all()
+    except Exception:
+        receipts = []
+
+    if receipts:
+        for r in receipts:
+            if not r.payment_date:
+                continue
+            month_key = r.payment_date.strftime("%Y-%m")
+            revenue_map[month_key] = revenue_map.get(month_key, 0.0) + float(r.amount or 0.0)
+    else:
+        assignments = db.query(models.FeeAssignment).filter(models.FeeAssignment.is_paid == True).all()
+        for a in assignments:
+            dt = getattr(a, "updated_at", None) or getattr(a, "created_at", None)
+            if not dt:
+                continue
+            month_key = dt.strftime("%Y-%m")
+            revenue_map[month_key] = revenue_map.get(month_key, 0.0) + float(a.amount or 0.0)
+
+    # Filter by start/end month if provided
+    months = sorted(revenue_map.keys(), reverse=True)
+    if start_month:
+        months = [m for m in months if m >= start_month]
+    if end_month:
+        months = [m for m in months if m <= end_month]
+
+    items = [{"month": m, "total": revenue_map[m]} for m in months]
+    return items
+
+
+@router.get("/export/monthly")
+def export_monthly_revenue(
+    db: Session = Depends(database.get_db),
+    current_superadmin: schemas.UserResponse = Depends(get_current_superadmin),
+    start_month: str = Query(None, description="YYYY-MM"),
+    end_month: str = Query(None, description="YYYY-MM")
+):
+    revenue_map: Dict[str, float] = {}
+
+    try:
+        receipts = db.query(models.FeeReceipt).filter(models.FeeReceipt.payment_date != None).all()
+    except Exception:
+        receipts = []
+
+    if receipts:
+        for r in receipts:
+            if not r.payment_date:
+                continue
+            month_key = r.payment_date.strftime("%Y-%m")
+            revenue_map[month_key] = revenue_map.get(month_key, 0.0) + float(r.amount or 0.0)
+    else:
+        assignments = db.query(models.FeeAssignment).filter(models.FeeAssignment.is_paid == True).all()
+        for a in assignments:
+            dt = getattr(a, "updated_at", None) or getattr(a, "created_at", None)
+            if not dt:
+                continue
+            month_key = dt.strftime("%Y-%m")
+            revenue_map[month_key] = revenue_map.get(month_key, 0.0) + float(a.amount or 0.0)
+
+    # Filter by date range
+    months = sorted(revenue_map.keys(), reverse=True)
+    if start_month:
+        months = [m for m in months if m >= start_month]
+    if end_month:
+        months = [m for m in months if m <= end_month]
+
+    # Create Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Monthly Revenue"
+    ws.append(["Month", "Total Revenue (INR)"])
+
+    for month in months:
+        ws.append([month, round(revenue_map[month], 2)])
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"monthly_revenue_{start_month or 'all'}_{end_month or 'all'}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 
 # NEW ENDPOINT: Update fee status (admin/superadmin only)
 @router.put("/{fee_id}/status", response_model=schemas.FeeAssignmentResponse)

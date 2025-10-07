@@ -57,6 +57,12 @@ interface FeeAnalytics {
   paid_by_card: number;
   paid_by_cash: number;
   paid_by_upi: number;
+  paid_by_cheque: number; // ✅ added
+}
+
+interface MonthlyRevenueItem {
+  month: string; // 'YYYY-MM'
+  total: number;
 }
 
 interface User {
@@ -67,6 +73,7 @@ interface User {
 export default function SuperadminBilling() {
   const [fees, setFees] = useState<Fee[]>([]);
   const [analytics, setAnalytics] = useState<FeeAnalytics | null>(null);
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFee, setSelectedFee] = useState<Fee | null>(null);
@@ -89,6 +96,27 @@ export default function SuperadminBilling() {
 
   const { toast } = useToast();
   const token = localStorage.getItem("token");
+
+  const [startMonth, setStartMonth] = useState<string>("");
+  // Monthly Revenue Pagination
+  const [monthlyCurrentPage, setMonthlyCurrentPage] = useState(1);
+  const monthlyItemsPerPage = 6;
+
+  const totalMonthlyPages = Math.ceil(monthlyRevenue.length / monthlyItemsPerPage);
+  const monthlyStartIndex = (monthlyCurrentPage - 1) * monthlyItemsPerPage;
+  const monthlyEndIndex = monthlyStartIndex + monthlyItemsPerPage;
+  const currentMonthlyItems = monthlyRevenue.slice(monthlyStartIndex, monthlyEndIndex);
+
+  const handleMonthlyPrev = () => {
+    setMonthlyCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleMonthlyNext = () => {
+    setMonthlyCurrentPage((prev) => Math.min(prev + 1, totalMonthlyPages));
+  };
+
+  const [endMonth, setEndMonth] = useState<string>("");
+
 
   const fetchFees = async () => {
     setLoading(true);
@@ -124,6 +152,51 @@ export default function SuperadminBilling() {
     }
   };
 
+  const fetchMonthlyRevenue = async () => {
+    try {
+      if (!token) throw new Error("No authentication token found.");
+      const params: any = {};
+      if (startMonth) params.start_month = startMonth;
+      if (endMonth) params.end_month = endMonth;
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/fees/monthly-revenue`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      setMonthlyRevenue(res.data || []);
+    } catch (err: any) {
+      console.error("Failed to load monthly revenue:", err);
+    }
+  };
+
+
+  const exportMonthlyRevenue = async () => {
+    try {
+      if (!token) throw new Error("No authentication token found.");
+      const params: any = {};
+      if (startMonth) params.start_month = startMonth;
+      if (endMonth) params.end_month = endMonth;
+
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/fees/export/monthly`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+        params,
+      });
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      saveAs(blob, `monthly_revenue_${startMonth || "all"}_${endMonth || "all"}.xlsx`);
+      toast({ title: "Exported", description: "Monthly revenue exported as Excel." });
+    } catch (err: any) {
+      console.error("Failed to export monthly revenue:", err);
+      toast({
+        title: "Error",
+        description: "Failed to export monthly revenue.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
   const fetchUsers = async () => {
     try {
       if (!token) throw new Error("No authentication token found.");
@@ -139,6 +212,7 @@ export default function SuperadminBilling() {
   useEffect(() => {
     fetchFees();
     fetchAnalytics();
+    fetchMonthlyRevenue();
     fetchUsers();
   }, [token]);
 
@@ -156,6 +230,7 @@ export default function SuperadminBilling() {
       });
       fetchFees();
       fetchAnalytics();
+      fetchMonthlyRevenue(); // refresh monthly revenue
     } catch (err: any) {
       toast({
         title: "Error",
@@ -295,6 +370,7 @@ export default function SuperadminBilling() {
       
       fetchFees();
       fetchAnalytics();
+      fetchMonthlyRevenue();
 
     } catch (err: any) {
       toast({
@@ -359,76 +435,82 @@ export default function SuperadminBilling() {
             Manage all user fees and view financial analytics.
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="mt-4 sm:mt-0 bg-logoOrange hover:bg-logoOrange/90 transition-colors">
-              <UserPlus className="w-4 h-4 mr-2" /> Assign New Fee
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign New Fee</DialogTitle>
-              <DialogDescription>
-                Fill in the details to assign a new fee to a user.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="user" className="text-right">User</Label>
-                <Select onValueChange={setAssigneeId} value={assigneeId}>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {users.map(user => (
-                        <SelectItem key={user.id} value={String(user.id)}>{user.name}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="feeType" className="text-right">Fee Type</Label>
-                <Input id="feeType" value={feeType} onChange={(e) => setFeeType(e.target.value)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">Amount</Label>
-                <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="dueDate" className="text-right">Due Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] justify-start text-left font-normal col-span-3",
-                        !dueDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      onSelect={setDueDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAssignFee} disabled={isAssigningFee}>
-                {isAssigningFee ? "Assigning..." : "Assign Fee"}
+        <div className="flex items-center gap-3">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="mt-4 sm:mt-0 bg-logoOrange hover:bg-logoOrange/90 transition-colors">
+                <UserPlus className="w-4 h-4 mr-2" /> Assign New Fee
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Assign New Fee</DialogTitle>
+                <DialogDescription>
+                  Fill in the details to assign a new fee to a user.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="user" className="text-right">User</Label>
+                  <Select onValueChange={setAssigneeId} value={assigneeId}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select a user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {users.map(user => (
+                          <SelectItem key={user.id} value={String(user.id)}>{user.name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="feeType" className="text-right">Fee Type</Label>
+                  <Input id="feeType" value={feeType} onChange={(e) => setFeeType(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="amount" className="text-right">Amount</Label>
+                  <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="dueDate" className="text-right">Due Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal col-span-3",
+                          !dueDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={dueDate}
+                        onSelect={setDueDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAssignFee} disabled={isAssigningFee}>
+                  {isAssigningFee ? "Assigning..." : "Assign Fee"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button onClick={exportMonthlyRevenue} className="mt-4 sm:mt-0 bg-green-600 hover:bg-green-700 transition-colors">
+            Export Monthly Revenue
+          </Button>
+        </div>
       </div>
       
       {analytics && (
@@ -469,10 +551,99 @@ export default function SuperadminBilling() {
               <p>Card: <span className="font-bold">₹{analytics.paid_by_card.toFixed(2)}</span></p>
               <p>Cash: <span className="font-bold">₹{analytics.paid_by_cash.toFixed(2)}</span></p>
               <p>UPI: <span className="font-bold">₹{analytics.paid_by_upi.toFixed(2)}</span></p>
+              <p>Cheque: <span className="font-bold">₹{analytics.paid_by_cheque.toFixed(2)}</span></p>
             </CardContent>
           </Card>
         </div>
       )}
+
+      {/* Monthly Revenue Card */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 justify-end mb-4">
+          <input
+            type="month"
+            value={startMonth}
+            onChange={(e) => setStartMonth(e.target.value)}
+            className="border rounded px-2 py-1 text-sm"
+          />
+          <span>-</span>
+          <input
+            type="month"
+            value={endMonth}
+            onChange={(e) => setEndMonth(e.target.value)}
+            className="border rounded px-2 py-1 text-sm"
+          />
+          <Button variant="outline" size="sm" onClick={fetchMonthlyRevenue}>
+            Filter
+          </Button>
+        </div>
+        <Card className="bg-white shadow-sm rounded-lg border border-gray-200">
+          <CardHeader className="flex items-center justify-between pb-2">
+            <CardTitle className="text-lg font-medium text-gray-800">Monthly Revenue</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              {monthlyRevenue.length > 0 ? `${monthlyRevenue.length} months` : "No data"}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground border-b">
+                  <tr>
+                    <th className="py-2">Month</th>
+                    <th className="py-2">Total (INR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyRevenue.length === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="py-6 text-center text-muted-foreground">No monthly revenue found</td>
+                    </tr>
+                  ) : (
+                    currentMonthlyItems.map((m) => (
+                      <tr key={m.month} className="border-b hover:bg-gray-50">
+                        <td className="py-2">{(() => {
+                          try {
+                            const d = new Date(m.month + "-01");
+                            return format(d, "MMM yyyy");
+                          } catch {
+                            return m.month;
+                          }
+                        })()}</td>
+                        <td className="py-2 font-medium">₹{m.total.toFixed(2)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button onClick={exportMonthlyRevenue}>Download Excel</Button>
+            </div>
+            {/* Monthly Revenue Pagination (Always Visible) */}
+            <div className="flex items-center justify-between mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMonthlyPrev}
+                disabled={monthlyCurrentPage === 1 || totalMonthlyPages === 0}
+              >
+                <ChevronLeft className="h-4 w-4" /> Previous
+              </Button>
+              <div className="text-sm text-muted-foreground">
+                Page {totalMonthlyPages === 0 ? 0 : monthlyCurrentPage} of {totalMonthlyPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMonthlyNext}
+                disabled={monthlyCurrentPage === totalMonthlyPages || totalMonthlyPages === 0}
+              >
+                Next <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       
       <Card className="bg-white shadow-sm rounded-lg border border-gray-200">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -583,6 +754,7 @@ export default function SuperadminBilling() {
                                           <SelectItem value="Card">Card</SelectItem>
                                           <SelectItem value="Cash">Cash</SelectItem>
                                           <SelectItem value="UPI">UPI</SelectItem>
+                                          <SelectItem value="Cheque">Cheque</SelectItem> {/* ✅ added */}
                                         </SelectGroup>
                                       </SelectContent>
                                     </Select>

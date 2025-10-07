@@ -265,9 +265,19 @@ class FeeAnalyticsResponse(BaseModel): # ⬅️ NEW: Schema for analytics
     paid_by_card: float
     paid_by_cash: float
     paid_by_upi: float
+    paid_by_cheque: float   # ✅ Added
 
     class Config:
         from_attributes = True
+
+# New response schema for monthly revenue returned to frontend
+class MonthlyRevenueResponse(BaseModel):
+    month: str   # format: YYYY-MM
+    total: float
+
+    class Config:
+        from_attributes = True
+
 
 class UserNotificationCreate(BaseModel):
     user_id: int
