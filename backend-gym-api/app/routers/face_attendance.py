@@ -1,5 +1,6 @@
 # face_attendance.py
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
+# ⭐️ I've updated this file ⭐️
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, Form # ✅ Added Form
 from sqlalchemy.orm import Session
 from .. import database, models, utils
 from datetime import date, datetime # Import both date and datetime class
@@ -38,6 +39,7 @@ def get_current_trainer(current_user = Depends(get_current_active_user)):
 @router.post("/")
 async def mark_attendance_from_face(
     file: UploadFile = File(...),
+    active_members_only: bool = Form(False), # ✅ NEW: Accept toggle state from frontend
     db: Session = Depends(database.get_db),
     current_user = Depends(get_current_trainer)
 ):
@@ -59,7 +61,7 @@ async def mark_attendance_from_face(
                 detail="File size too large. Maximum 10MB allowed."
             )
 
-        logger.info("Processing face attendance request")
+        logger.info(f"Processing face attendance request. Active members only: {active_members_only}")
 
         try:
             # Use Pillow to open and convert the image to 8-bit RGB
@@ -77,19 +79,29 @@ async def mark_attendance_from_face(
         # Query users with face encodings based on user permissions
         query = db.query(models.User).filter(models.User.face_encoding.isnot(None))
         
+        # ✅ NEW LOGIC: Filter for active members if toggled
+        if active_members_only:
+            logger.info("Filtering for active (paid) members only.")
+            query = query.join(
+                models.FeeAssignment, models.User.id == models.FeeAssignment.user_id
+            ).filter(models.FeeAssignment.is_paid == True)
+        
         # Filter by branch for trainers and admins
         if current_user.role in ["trainer", "admin"] and current_user.branch:
             query = query.filter(models.User.branch == current_user.branch)
         
-        users = query.all()
+        users = query.distinct(models.User.id).all() # Use distinct to avoid duplicates
 
         if not users:
+            detail_message = "No users with face encodings found in your branch."
+            if active_members_only:
+                detail_message = "No active (paid) members with face encodings found in your branch."
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No users with face encodings found in your branch."
+                detail=detail_message
             )
 
-        logger.info(f"Found {len(users)} users with face encodings")
+        logger.info(f"Found {len(users)} users with face encodings to compare against.")
 
         # Prepare known face data
         known_encodings = []
@@ -185,7 +197,7 @@ async def mark_attendance_from_face(
                             try:
                                 new_attendance = models.UserAttendance(
                                     user_id=matched_id,
-                                    date=today_date, # 🌟 Use today_date
+                                    date=today_date, # 検 Use today_date
                                     time=current_time,
                                     status="present",
                                     branch=user_branch
@@ -321,10 +333,10 @@ async def mark_manual_attendance(
 ):
     """Manually mark attendance for multiple users"""
     try:
-        now = datetime.now() # 🌟 Get current datetime
+        now = datetime.now() # 検 Get current datetime
         if not attendance_date:
             attendance_date = now.date()
-        current_time = now.time() # 🌟 Get current time
+        current_time = now.time() # 検 Get current time
         
         # Verify all users exist and are in the correct branch
         query = db.query(models.User).filter(models.User.id.in_(user_ids))

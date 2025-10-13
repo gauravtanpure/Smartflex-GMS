@@ -1,3 +1,5 @@
+// TrainerAttendance.tsx
+// ⭐️ I've updated this file ⭐️
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +10,9 @@ import { RefreshCcw, PlusCircle, Camera, Users, CheckCircle, Clock, Loader2, Use
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// ✅ NEW IMPORTS: For the toggle switch
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface User {
     id: number;
@@ -76,6 +81,9 @@ export default function TrainerAttendance() {
     // New state for search and filter
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'enrolled', 'pending'
+
+    // ✅ NEW STATE: For the "Active Members Only" toggle
+    const [activeMembersOnly, setActiveMembersOnly] = useState(false);
 
 
     const startCamera = () => {
@@ -198,6 +206,7 @@ export default function TrainerAttendance() {
 
             const formData = new FormData();
             formData.append("file", blob, "attendance.jpg");
+            formData.append("active_members_only", String(activeMembersOnly));
 
             try {
                 const token = localStorage.getItem("token");
@@ -215,28 +224,24 @@ export default function TrainerAttendance() {
                 const data = await res.json();
                 setMarkMessage(data.message);
                 
-                // 🌟 MODIFIED TO INCLUDE TIME 🌟
                 let descriptionMessage = data.message;
                 if (data.date && data.time) {
-                    // Create a Date object using the received time string
                     const attendanceTime = new Date(`1970/01/01 ${data.time}`);
-                    // Format the time for display
                     const formattedTime = attendanceTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
                     descriptionMessage = `${data.message} Marked at ${formattedTime}.`;
                 }
 
-
                 toast({
-                    title: "Attendance Marked!",
-                    description: descriptionMessage, // Use the new descriptive message
+                    title: "Attendance Processed!",
+                    description: descriptionMessage,
                     className: "border-green-200 bg-green-50 text-green-900"
                 });
 
-                setTimeout(() => {
-                    stopCamera();
-                    setIsMarkModalOpen(false);
-                    setIsProcessingAttendance(false);
-                }, 1500);
+                // ✅ CHANGED: Removed the timeout that closes the modal.
+                // The modal will now stay open for continuous attendance marking.
+                // The button is re-enabled to allow the next scan.
+                setIsProcessingAttendance(false);
+
             } catch (err) {
                 console.error(err);
                 const errMsg = err instanceof Error ? err.message : "Unexpected error";
@@ -348,7 +353,19 @@ export default function TrainerAttendance() {
                                 Manage facial recognition enrollment and track attendance
                             </p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
+                            {/* ✅ NEW TOGGLE SWITCH */}
+                            <div className="flex items-center space-x-2 pr-4 border-r dark:border-gray-600">
+                                <Switch
+                                    id="active-members-toggle"
+                                    checked={activeMembersOnly}
+                                    onCheckedChange={setActiveMembersOnly}
+                                    aria-label="Toggle active members only"
+                                />
+                                <Label htmlFor="active-members-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
+                                    Active Members Only
+                                </Label>
+                            </div>
                             <Button
                                 onClick={fetchData}
                                 disabled={loading}
@@ -656,6 +673,10 @@ export default function TrainerAttendance() {
                             </DialogTitle>
                             <p className="text-center text-gray-600 dark:text-gray-400">
                                 Position your face in the camera
+                            </p>
+                            {/* ✅ NEW: Display attendance mode in modal */}
+                            <p className="text-center text-xs font-semibold text-blue-600 dark:text-blue-400 pt-1">
+                                Mode: {activeMembersOnly ? "Active Members Only" : "All Users"}
                             </p>
                         </DialogHeader>
                         <div className="relative w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl overflow-hidden flex items-center justify-center shadow-inner">
