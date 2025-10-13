@@ -78,12 +78,14 @@ class TrainerRevenueUpdate(BaseModel):
 class UserAttendanceCreate(BaseModel):
     user_id: int
     date: date
+    time: time
     status: str
 
 class UserAttendanceResponse(BaseModel):
     id: int
     user_id: int
     date: date
+    time: Optional[time]
     status: str
     branch: Optional[str]
 
@@ -95,6 +97,7 @@ class UserAttendanceResponseFace(BaseModel):
     user_id: int
     user_name: str
     date: date
+    time: Optional[time]
     status: str
     branch: Optional[str]
 

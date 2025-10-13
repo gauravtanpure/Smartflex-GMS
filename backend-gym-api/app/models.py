@@ -121,6 +121,7 @@ class UserAttendance(Base): # New Model for User Attendance
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     date = Column(Date)
+    time = Column(Time, nullable=True)
     status = Column(String)
     branch = Column(String, nullable=True)
 

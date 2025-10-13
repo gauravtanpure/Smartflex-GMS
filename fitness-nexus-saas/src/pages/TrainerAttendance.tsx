@@ -214,9 +214,21 @@ export default function TrainerAttendance() {
 
                 const data = await res.json();
                 setMarkMessage(data.message);
+                
+                // 🌟 MODIFIED TO INCLUDE TIME 🌟
+                let descriptionMessage = data.message;
+                if (data.date && data.time) {
+                    // Create a Date object using the received time string
+                    const attendanceTime = new Date(`1970/01/01 ${data.time}`);
+                    // Format the time for display
+                    const formattedTime = attendanceTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    descriptionMessage = `${data.message} Marked at ${formattedTime}.`;
+                }
+
+
                 toast({
                     title: "Attendance Marked!",
-                    description: data.message,
+                    description: descriptionMessage, // Use the new descriptive message
                     className: "border-green-200 bg-green-50 text-green-900"
                 });
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from pathlib import Path
 from dotenv import load_dotenv
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, time
 from .. import models, schemas, database, utils
 from app.schemas import BulkAttendanceEntry
 import os
@@ -215,6 +215,7 @@ def get_attendance_by_branch(
             models.UserAttendance.user_id,
             models.User.name.label("user_name"),
             models.UserAttendance.date,
+            models.UserAttendance.time, # 🌟 ADD time
             models.UserAttendance.status,
             models.UserAttendance.branch
         )
@@ -249,6 +250,7 @@ def create_attendance_record(
     new_attendance = models.UserAttendance(
         user_id=attendance_data.user_id,
         date=attendance_data.date,
+        time=attendance_data.time, # 🌟 ADD time
         status=attendance_data.status,
         branch=trainer_branch
     )
@@ -287,6 +289,7 @@ def update_attendance_record(
 
     db_attendance.user_id = attendance_data.user_id
     db_attendance.date = attendance_data.date
+    db_attendance.time = attendance_data.time # 🌟 ADD time
     db_attendance.status = attendance_data.status
 
     db.commit()

@@ -35,6 +35,8 @@ interface AttendanceRecord {
   user_id: number;
   user_name: string;
   date: string;
+  // 🌟 NEW FIELD 🌟
+  time: string; // The time field (e.g., "14:30:00")
   status: string;
   branch: string;
   created_at: string;
@@ -229,6 +231,8 @@ export default function UserAttendance() {
                 <TableHead className="py-3 px-6 text-left font-bold rounded-tl-lg">User ID</TableHead>
                 <TableHead className="py-3 px-6 text-left font-bold">User Name</TableHead>
                 <TableHead className="py-3 px-6 text-left font-bold">Date</TableHead>
+                {/* 🌟 NEW TABLE HEAD 🌟 */}
+                <TableHead className="py-3 px-6 text-left font-bold">Time</TableHead>
                 <TableHead className="py-3 px-6 text-left font-bold">Status</TableHead>
                 <TableHead className="py-3 px-6 text-left font-bold rounded-tr-lg">Branch</TableHead>
               </TableRow>
@@ -240,6 +244,13 @@ export default function UserAttendance() {
                     <TableCell className="py-3 px-6">{record.user_id}</TableCell>
                     <TableCell className="py-3 px-6 font-medium">{record.user_name}</TableCell>
                     <TableCell className="py-3 px-6">{format(new Date(record.date), "PPP")}</TableCell>
+                    {/* 🌟 NEW TABLE CELL 🌟 */}
+                    <TableCell className="py-3 px-6">
+                      {record.time 
+                        ? format(new Date(`2000-01-01T${record.time}`), "h:mm:ss a") // Format time: "2000-01-01T" is prepended to treat the time string as a valid datetime for formatting
+                        : "N/A"
+                      }
+                    </TableCell>
                     <TableCell className="py-3 px-6">
                       <span
                         className={cn(
@@ -258,7 +269,7 @@ export default function UserAttendance() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-4 text-gray-500">
                     No attendance records found for the selected filters.
                   </TableCell>
                 </TableRow>

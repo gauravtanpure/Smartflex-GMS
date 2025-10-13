@@ -2,11 +2,12 @@
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 from .. import database, models, utils
+from datetime import date, datetime # Import both date and datetime class
+import datetime # Keep this if other parts of the codebase might rely on it, but is potentially redundant now.
 import face_recognition
 import numpy as np
 import io
 from PIL import Image
-from datetime import date
 import logging
 from typing import List
 from app.utils import get_current_user
@@ -135,6 +136,11 @@ async def mark_attendance_from_face(
         marked_users = []
         recognized_users = []
         today = date.today()
+        # FIX: Use the datetime class from the datetime module
+        now = datetime.datetime.now() 
+        today_date = now.date()
+        current_time = now.time()
+
         
         for unknown_encoding in face_encodings_in_image:
             try:
@@ -163,7 +169,7 @@ async def mark_attendance_from_face(
                         # Check if attendance is already marked for today
                         existing_attendance = db.query(models.UserAttendance).filter(
                             models.UserAttendance.user_id == matched_id,
-                            models.UserAttendance.date == today
+                            models.UserAttendance.date == today_date
                         ).first()
 
                         if existing_attendance:
@@ -179,7 +185,8 @@ async def mark_attendance_from_face(
                             try:
                                 new_attendance = models.UserAttendance(
                                     user_id=matched_id,
-                                    date=today,
+                                    date=today_date, # 🌟 Use today_date
+                                    time=current_time,
                                     status="present",
                                     branch=user_branch
                                 )
@@ -189,7 +196,8 @@ async def mark_attendance_from_face(
                                     "user_id": matched_id,
                                     "name": matched_name,
                                     "status": "marked_present",
-                                    "date": today.isoformat()
+                                    "date": today_date.isoformat(),
+                                    "time": current_time.isoformat()
                                 })
                                 logger.info(f"Marked attendance for user {matched_id} ({matched_name})")
                             except Exception as e:
@@ -234,7 +242,8 @@ async def mark_attendance_from_face(
             "present_user_ids": marked_users,
             "recognized_users": recognized_users,
             "total_faces_detected": len(face_encodings_in_image),
-            "date": today.isoformat()
+            "date": today_date.isoformat(),
+            "time": current_time.isoformat()
         }
 
     except HTTPException:
@@ -312,8 +321,10 @@ async def mark_manual_attendance(
 ):
     """Manually mark attendance for multiple users"""
     try:
+        now = datetime.now() # 🌟 Get current datetime
         if not attendance_date:
-            attendance_date = date.today()
+            attendance_date = now.date()
+        current_time = now.time() # 🌟 Get current time
         
         # Verify all users exist and are in the correct branch
         query = db.query(models.User).filter(models.User.id.in_(user_ids))
@@ -344,6 +355,8 @@ async def mark_manual_attendance(
             if existing:
                 if existing.status != "present":
                     existing.status = "present"
+                    existing.time = current_time,
+                    time=current_time,
                     updated_users.append(user.id)
             else:
                 new_attendance = models.UserAttendance(
@@ -361,7 +374,8 @@ async def mark_manual_attendance(
             "message": f"Attendance processed for {len(user_ids)} users",
             "marked_new": marked_users,
             "updated_existing": updated_users,
-            "date": attendance_date.isoformat()
+            "date": attendance_date.isoformat(),
+            "time": current_time.isoformat()
         }
         
     except HTTPException:
@@ -403,7 +417,7 @@ def mark_attendance(
                 new_record = models.Attendance(
                     user_id=user.id,
                     date=date.today(),
-                    status="Present",
+                    status="present",
                     branch=user.branch
                 )
                 db.add(new_record)
