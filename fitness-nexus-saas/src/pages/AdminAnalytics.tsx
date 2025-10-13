@@ -54,6 +54,7 @@ ChartJS.register(
 export default function AdminAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [userPlanStatus, setUserPlanStatus] = useState<any[] | null>(null);
+  const [usersInsideCount, setUsersInsideCount] = useState<number | null>(null); // State for users inside count
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,9 +73,7 @@ export default function AdminAnalytics() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
-        if (!res.ok) {
-          throw new Error("Network response was not ok");
-        }
+        if (!res.ok) throw new Error("Network response was not ok");
         return res.json();
       })
       .then(setAnalyticsData)
@@ -88,15 +87,27 @@ export default function AdminAnalytics() {
         headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
-        if (!res.ok) {
-          throw new Error("Network response was not ok");
-        }
+        if (!res.ok) throw new Error("Network response was not ok");
         return res.json();
       })
       .then(setUserPlanStatus)
       .catch(err => {
         console.error("Failed to fetch user plan status:", err);
         setUserPlanStatus(null);
+      });
+
+    // Fetch users inside count
+    fetch(`${import.meta.env.VITE_API_URL}/analytics/users-inside-count`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok for users inside count");
+        return res.json();
+      })
+      .then(data => setUsersInsideCount(data.users_inside_count))
+      .catch(err => {
+        console.error("Failed to fetch users inside count:", err);
+        setUsersInsideCount(null);
       });
 
   }, []);
@@ -122,7 +133,8 @@ export default function AdminAnalytics() {
     setCurrentPage(page);
   };
 
-  if (!analyticsData || !userPlanStatus) {
+  // Updated loading state check
+  if (!analyticsData || !userPlanStatus || usersInsideCount === null) {
     return <p className="text-center p-8">Loading analytics...</p>;
   }
 
@@ -176,8 +188,29 @@ export default function AdminAnalytics() {
   
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-boldd text-gray-800 text-logoOrange">Analytics Dashboard</h1>
-      <p className="text-gray-600">Overview of user, trainer, and plan data for your branch.</p>
+      {/* Page Header with Live Count */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h1 className="text-2xl font-boldd text-gray-800 text-logoOrange">Analytics Dashboard</h1>
+          <p className="text-gray-600">Overview of user, trainer, and plan data for your branch.</p>
+        </div>
+        
+        {/* Card for Users Inside Gym */}
+        <Card className="shadow-lg bg-blue-500 text-white w-64">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center space-x-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Users Inside Gym</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold text-center">{usersInsideCount}</p>
+            <p className="text-xs text-center text-blue-100 mt-1">In the last 1.5 hours</p>
+          </CardContent>
+        </Card>
+      </div>
       
       {/* User Analytics Section */}
       <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">User Analytics</h2>

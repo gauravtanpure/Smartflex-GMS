@@ -108,3 +108,41 @@ def get_user_plan_status(
             "has_plan": has_plan
         })
     return user_plan_status
+
+
+@router.get("/users-inside-count")
+def get_users_inside_count(
+    db: Session = Depends(database.get_db),
+    current_admin: schemas.UserResponse = Depends(get_current_admin_or_superadmin)
+) -> Dict:
+    """
+    Calculates the number of unique users who have marked attendance
+    (status='present') in the last 90 minutes.
+    """
+    now = datetime.now()
+    time_threshold = now - timedelta(minutes=90)
+    
+    # Base query for attendance records in the last day
+    query = db.query(models.UserAttendance).filter(
+        models.UserAttendance.status == "present",
+        models.UserAttendance.date >= time_threshold.date(),
+        models.UserAttendance.time != None
+    )
+    
+    # Filter by branch for the admin role
+    if current_admin.role == "admin":
+        if not current_admin.branch:
+             raise HTTPException(status_code=400, detail="Admin's branch is not specified.")
+        query = query.filter(models.UserAttendance.branch == current_admin.branch)
+    
+    # Fetch potential records and filter precisely in Python
+    recent_attendances = query.all()
+    
+    unique_user_ids = set()
+    for attendance in recent_attendances:
+        # Combine date and time from the record to create a full datetime object
+        attendance_datetime = datetime.combine(attendance.date, attendance.time)
+        if attendance_datetime >= time_threshold:
+            unique_user_ids.add(attendance.user_id)
+            
+    return {"users_inside_count": len(unique_user_ids)}

@@ -3,3 +3,5 @@
 **/.env
 /app/__pycache__/
 /app/**/*.pyc
+/app/routers/__pycache__/
+/app/routers/**/*.pyc

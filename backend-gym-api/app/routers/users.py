@@ -181,6 +181,7 @@ def get_branch_enrollments(
     return result
 
 
+
 @router.get("/branch-users", response_model=List[schemas.UserResponse])
 def get_users_by_branch(
     db: Session = Depends(database.get_db),

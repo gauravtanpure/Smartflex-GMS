@@ -387,7 +387,7 @@ async def mark_manual_attendance(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error processing manual attendance"
         )
-    
+        
 
 @router.post("/face-attendance")
 def mark_attendance(
