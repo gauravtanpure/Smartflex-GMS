@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from typing import List, Optional
 from datetime import date, datetime, time
+from dateutil.relativedelta import relativedelta  # ⬅️ ADD THIS IMPORT
 from .. import models, schemas, database, utils
 from app.schemas import BulkAttendanceEntry
 import os
@@ -129,10 +130,14 @@ def get_branch_enrollments(
     if not current_admin.branch:
         raise HTTPException(status_code=400, detail="Branch not specified for the current user.")
 
+    # 🔽 START OF MODIFICATION
+
+    # 1. Modified Query: Joined MembershipPlan to get plan duration
     users_data = (
-        db.query(models.User, models.Member, models.FeeAssignment)
+        db.query(models.User, models.Member, models.FeeAssignment, models.MembershipPlan)
         .outerjoin(models.Member, models.User.id == models.Member.user_id)
         .outerjoin(models.FeeAssignment, models.User.id == models.FeeAssignment.user_id)
+        .outerjoin(models.MembershipPlan, models.FeeAssignment.fee_type == models.MembershipPlan.plan_name) # Join with MembershipPlan
         .filter(models.User.branch == current_admin.branch)
         .order_by(models.FeeAssignment.created_at.desc())
         .all()
@@ -141,7 +146,8 @@ def get_branch_enrollments(
     result = []
     processed_users = set()
 
-    for user, member, fee_assignment in users_data:
+    # 2. Updated Loop: Unpack the new 'plan' object from the query result
+    for user, member, fee_assignment, plan in users_data:
         if user.id in processed_users:
             continue
 
@@ -160,9 +166,24 @@ def get_branch_enrollments(
         opted_plan = fee_assignment.fee_type if fee_assignment else None
         date_joined = fee_assignment.created_at if fee_assignment else None
 
+        # 3. New Status Logic: Check for expiration
         status_text = "Pending Enrollment"
         if fee_assignment:
-            status_text = "Active" if fee_assignment.is_paid else "Unpaid Fees"
+            if not fee_assignment.is_paid:
+                status_text = "Unpaid Fees"
+            elif plan: # Check if a corresponding plan was found
+                start_date = fee_assignment.created_at.date()
+                duration_months = plan.duration_months
+                expiration_date = start_date + relativedelta(months=+duration_months)
+
+                if date.today() > expiration_date:
+                    status_text = "Inactive" # Set status to Inactive if expired
+                else:
+                    status_text = "Active"
+            else:
+                 # Fallback if fee exists but plan details are missing
+                status_text = "Active" if fee_assignment.is_paid else "Unpaid Fees"
+
 
         user_data_for_schema = {
             "user_id": user.id,
@@ -179,6 +200,8 @@ def get_branch_enrollments(
         processed_users.add(user.id)
 
     return result
+
+    # 🔼 END OF MODIFICATION
 
 
 
