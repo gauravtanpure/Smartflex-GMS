@@ -19,7 +19,8 @@ import {
   CircleCheck,
   Plane,
   PlaneTakeoff,
-  DollarSign, // ⬅️ NEW: Import DollarSign icon
+  DollarSign,
+  Banknote, // --- CHANGE: ADDED Banknote ICON ---
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -193,21 +194,39 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           )}
 
           {isSuperAdmin && (
-            <NavLink
-              to="/superadmin-billing"
-              onClick={onMobileClose}
-              className={cn(
-                "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
-                location.pathname === "/superadmin-billing" ? "bg-primary text-primary-foreground shadow-sm" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              )}
-            >
-              <DollarSign className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/superadmin-billing" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
-              {!collapsed && (
-                <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                  Billing
-                </span>
-              )}
-            </NavLink>
+            <>
+              <NavLink
+                to="/superadmin-billing"
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/superadmin-billing" ? "bg-primary text-primary-foreground shadow-sm" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <DollarSign className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/superadmin-billing" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                    Billing
+                  </span>
+                )}
+              </NavLink>
+              {/* --- CHANGE: ADDED NEW LINK FOR CASH PAYMENTS --- */}
+              <NavLink
+                to="/cash-payment"
+                onClick={onMobileClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  location.pathname === "/cash-payment" ? "bg-primary text-primary-foreground shadow-sm" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                )}
+              >
+                <Banknote className={cn("w-5 h-5 flex-shrink-0", location.pathname === "/cash-payment" ? "text-primary-foreground" : "text-gray-500 group-hover:text-gray-700")} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold truncate" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                    Cash Payments
+                  </span>
+                )}
+              </NavLink>
+            </>
           )}
 
           {isAdmin && (

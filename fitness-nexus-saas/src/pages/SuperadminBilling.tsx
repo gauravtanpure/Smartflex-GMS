@@ -752,9 +752,9 @@ export default function SuperadminBilling() {
                                         <SelectGroup>
                                           <SelectLabel>Payment Options</SelectLabel>
                                           <SelectItem value="Card">Card</SelectItem>
-                                          <SelectItem value="Cash">Cash</SelectItem>
+                                          {/* --- CHANGE: REMOVED CASH OPTION --- */}
                                           <SelectItem value="UPI">UPI</SelectItem>
-                                          <SelectItem value="Cheque">Cheque</SelectItem> {/* ✅ added */}
+                                          <SelectItem value="Cheque">Cheque</SelectItem>
                                         </SelectGroup>
                                       </SelectContent>
                                     </Select>

@@ -34,6 +34,7 @@ import ManagePTORequests from "./pages/ManagePTORequests";
 import UserAttendance from "./pages/UserAttendance";
 import { Analytics } from '@vercel/analytics/react';
 import VerifyEmail from './pages/VerifyEmail';
+import CashPayment from "./pages/CashPayment"; // --- CHANGE: IMPORT THE NEW PAGE ---
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,8 @@ const App = () => {
           <Route path="/trainer/sessions" element={renderProtectedRoute(ManageSessions, ["trainer", "admin", "superadmin"])} />
           <Route path="/manage-fees" element={renderProtectedRoute(ManageFees, ["admin", "superadmin"])} />
           <Route path="/superadmin-billing" element={renderProtectedRoute(SuperadminBilling, ["superadmin"])} />
+          {/* --- CHANGE: ADDED NEW ROUTE FOR CASH PAYMENTS --- */}
+          <Route path="/cash-payment" element={renderProtectedRoute(CashPayment, ["superadmin"])} />
           <Route path="/trainer/assign-diet" element={renderProtectedRoute(AssignDiet, ["trainer", "admin", "superadmin"])} />
           <Route path="/trainer/assign-exercise" element={renderProtectedRoute(AssignExercise, ["trainer", "admin", "superadmin"])} />
           <Route path="/manage-membership-plans" element={renderProtectedRoute(ManageMembershipPlans, ["admin", "superadmin"])} />
