@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // Import the Input component
 import { RefreshCcw } from "lucide-react";
 
 interface User {
@@ -32,6 +33,7 @@ export default function TrainerUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState(""); // State for the search query
 
   const { toast } = useToast();
 
@@ -53,6 +55,7 @@ export default function TrainerUsers() {
         const data: User[] = await res.json();
         setUsers(data);
         setCurrentPage(1); // Reset to page 1 on refresh
+        setSearchQuery(""); // Reset search on refresh
       } else {
         let errorMsg = "Failed to fetch users.";
         try {
@@ -77,9 +80,23 @@ export default function TrainerUsers() {
     fetchUsers();
   }, []);
 
-  const totalPages = Math.ceil(users.length / USERS_PER_PAGE);
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  // Filter users based on search query
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.branch.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
   const startIndex = (currentPage - 1) * USERS_PER_PAGE;
-  const currentUsers = users.slice(startIndex, startIndex + USERS_PER_PAGE);
+  const currentUsers = filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
 
   return (
     <div className="p-6 space-y-6 font-poppins">
@@ -98,15 +115,25 @@ export default function TrainerUsers() {
           <CardTitle>Users in Your Branch</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="mb-4">
+            <Input
+              placeholder="Search by name, email, phone, role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+
           {loading ? (
             <p>Loading users...</p>
           ) : error ? (
             <p className="text-red-500">{error}</p>
-          ) : users.length === 0 ? (
-            <p>No users found in your branch.</p>
+          ) : filteredUsers.length === 0 ? (
+             <p>{searchQuery ? "No users found matching your search." : "No users found in your branch."}</p>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border rounded-md">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -132,25 +159,27 @@ export default function TrainerUsers() {
               </div>
 
               {/* Pagination */}
-              <div className="flex justify-center items-center gap-4 pt-4">
-                <Button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
-                  variant="outline"
-                >
-                  Prev
-                </Button>
-                <span className="text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                  variant="outline"
-                >
-                  Next
-                </Button>
-              </div>
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-4 pt-4">
+                  <Button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => prev - 1)}
+                    variant="outline"
+                  >
+                    Prev
+                  </Button>
+                  <span className="text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    variant="outline"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </CardContent>

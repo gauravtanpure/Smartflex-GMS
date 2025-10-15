@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users as UsersIcon, Download, DollarSign, Search, Filter, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Info, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -47,30 +47,32 @@ export default function ManageFees() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [form, setForm] = useState({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" });
   const [searchQuery, setSearchQuery] = useState("");
+  const [userSearch, setUserSearch] = useState(""); // 🔍 Added user search
   const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "unpaid">("all");
+  const [loadingFeeId, setLoadingFeeId] = useState<number | null>(null); // ⏳ Loader for status update
   const { toast } = useToast();
 
   const [currentPage, setCurrentPage] = useState(1);
   const feesPerPage = 6;
-
   const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const usersRes = await axios.get(`${import.meta.env.VITE_API_URL}/users/branch-users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const [usersRes, plansRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/users/branch-users`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${import.meta.env.VITE_API_URL}/membership-plans/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
         setUsers(usersRes.data);
-
-        const plansRes = await axios.get(`${import.meta.env.VITE_API_URL}/membership-plans/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
         setPlans(plansRes.data);
-      } catch (error) {
+      } catch {
         toast({
           title: "Error",
-          description: "Failed to load users or plans. Please try again.",
+          description: "Failed to load users or plans.",
           variant: "destructive",
         });
       }
@@ -80,23 +82,36 @@ export default function ManageFees() {
     fetchBranchFees();
   }, [token]);
 
+  // 🧭 Fixed search functionality
   useEffect(() => {
-    fetchBranchFees();
+    const timeout = setTimeout(() => {
+      fetchBranchFees();
+    }, 400);
+    return () => clearTimeout(timeout);
   }, [searchQuery]);
 
-  const fetchBranchFees = () => {
-    axios
-      .get(`${import.meta.env.VITE_API_URL}/fees/branch?search_query=${searchQuery}`, {
+  const fetchBranchFees = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/fees/branch`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(res => setFees(res.data))
-      .catch(() => {
-        toast({
-          title: "Error",
-          description: "Failed to load fees. Please try again.",
-          variant: "destructive",
-        });
       });
+
+      const filtered = res.data.filter((fee: Fee) => {
+        if (!searchQuery) return true;
+        const search = searchQuery.toLowerCase();
+        return (
+          fee.user?.name?.toLowerCase().includes(search) ||
+          fee.user?.email?.toLowerCase().includes(search)
+        );
+      });
+      setFees(filtered);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load fees.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePlanChange = (value: string) => {
@@ -113,7 +128,7 @@ export default function ManageFees() {
     }
   };
 
-  const handleSendNotification = () => {
+  const handleSendNotification = async () => {
     if (!form.user_id || !form.fee_type || !form.amount || !form.due_date) {
       toast({
         title: "Validation Error",
@@ -123,53 +138,58 @@ export default function ManageFees() {
       return;
     }
 
-    axios
-      .post(`${import.meta.env.VITE_API_URL}/fees/`, {
-        user_id: parseInt(form.user_id),
-        fee_type: form.fee_type,
-        amount: parseFloat(form.amount),
-        due_date: form.due_date,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(() => {
-        toast({
-          title: "Success",
-          description: "Fee assigned successfully!",
-          className: "bg-green-100 text-green-800",
-        });
-        fetchBranchFees();
-        setForm({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" });
-      })
-      .catch(error => {
-        toast({
-          title: "Fee Assignment Failed",
-          description: error.response?.data?.detail || "An unknown error occurred.",
-          variant: "destructive",
-        });
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/fees/`,
+        {
+          user_id: parseInt(form.user_id),
+          fee_type: form.fee_type,
+          amount: parseFloat(form.amount),
+          due_date: form.due_date,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast({
+        title: "Success",
+        description: "Fee assigned successfully!",
+        className: "bg-green-100 text-green-800",
       });
+      fetchBranchFees();
+      setForm({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" });
+    } catch (error: any) {
+      toast({
+        title: "Fee Assignment Failed",
+        description: error.response?.data?.detail || "An unknown error occurred.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleTogglePaidStatus = (feeId: number, currentStatus: boolean) => {
-    axios
-      .put(`${import.meta.env.VITE_API_URL}/fees/${feeId}/status`, { is_paid: !currentStatus }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(() => {
-        toast({
-          title: "Status Updated",
-          description: `Fee marked as ${!currentStatus ? "Paid" : "Unpaid"}.`,
-          className: "bg-blue-100 text-blue-800",
-        });
-        fetchBranchFees();
-      })
-      .catch(() => {
-        toast({
-          title: "Error",
-          description: "Failed to update payment status. Please try again.",
-          variant: "destructive",
-        });
+  // ⏳ Added loader here
+  const handleTogglePaidStatus = async (feeId: number, currentStatus: boolean) => {
+    setLoadingFeeId(feeId);
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_API_URL}/fees/${feeId}/status`,
+        { is_paid: !currentStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast({
+        title: "Status Updated",
+        description: `Fee marked as ${!currentStatus ? "Paid" : "Unpaid"}.`,
+        className: "bg-blue-100 text-blue-800",
       });
+      fetchBranchFees();
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to update payment status.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingFeeId(null);
+    }
   };
 
   const filteredFees = fees.filter(fee => {
@@ -193,15 +213,12 @@ export default function ManageFees() {
     ];
 
     const csvContent = rows.map(row => row.map(item => `"${item}"`).join(",")).join("\n");
-
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
     a.download = "fee_assignments.csv";
     a.click();
-
     URL.revokeObjectURL(url);
   };
 
@@ -215,33 +232,51 @@ export default function ManageFees() {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
+  // 🔍 Filter users for user search
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+    u.email.toLowerCase().includes(userSearch.toLowerCase())
+  );
+
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 font-poppins">
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-        <h2 className="text-2xl sm:text-2xl font-boldd text-gray-900">Manage Fees</h2>
-        <Button onClick={exportToCSV} className="w-full sm:w-auto flex items-center space-x-2 bg-blue-600 hover:bg-blue-700">
-          <Download className="h-4 w-4" />
-          <span>Export CSV</span>
+        <h2 className="text-2xl font-bold text-gray-900">Manage Fees</h2>
+        <Button onClick={exportToCSV} className="bg-blue-600 hover:bg-blue-700">
+          <Download className="h-4 w-4 mr-2" /> Export CSV
         </Button>
       </div>
 
-      {/* Assign New Fee Card */}
-      <Card className="mb-8 shadow-sm rounded-lg border-gray-100">
+      {/* Assign Fee */}
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl font-boldd text-logoOrange">Assign New Fee</CardTitle>
+          <CardTitle className="text-xl text-logoOrange">Assign New Fee</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {/* 🔍 Added search box for user dropdown */}
+            <div className="space-y-1">
+              <Label htmlFor="user-search">Search User</Label>
+              <Input
+                id="user-search"
+                placeholder="Search by name or email"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+              />
+            </div>
+
             <div className="space-y-1">
               <Label htmlFor="user-select">Select User</Label>
               <Select value={form.user_id} onValueChange={value => setForm({ ...form, user_id: value })}>
-                <SelectTrigger id="user-select" className="w-full">
+                <SelectTrigger id="user-select">
                   <SelectValue placeholder="Select User" />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map(u => (
-                    <SelectItem key={u.id} value={u.id.toString()}>{u.name} ({u.email})</SelectItem>
+                  {filteredUsers.map(u => (
+                    <SelectItem key={u.id} value={u.id.toString()}>
+                      {u.name} ({u.email})
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -250,177 +285,119 @@ export default function ManageFees() {
             <div className="space-y-1">
               <Label htmlFor="plan-select">Select Plan</Label>
               <Select value={form.plan_id} onValueChange={handlePlanChange}>
-                <SelectTrigger id="plan-select" className="w-full">
+                <SelectTrigger id="plan-select">
                   <SelectValue placeholder="Select Plan" />
                 </SelectTrigger>
                 <SelectContent>
                   {plans.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>{p.plan_name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id.toString()}>
+                      {p.plan_name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="amount-input">Amount</Label>
-              <Input
-                id="amount-input"
-                type="number"
-                placeholder="Amount"
-                value={form.amount}
-                readOnly
-                className="bg-gray-50 cursor-not-allowed"
-              />
+              <Label htmlFor="amount">Amount</Label>
+              <Input id="amount" value={form.amount} readOnly className="bg-gray-50" />
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="due-date-input">Due Date</Label>
+              <Label htmlFor="due-date">Due Date</Label>
               <Input
-                id="due-date-input"
+                id="due-date"
                 type="date"
                 value={form.due_date}
                 onChange={e => setForm({ ...form, due_date: e.target.value })}
               />
             </div>
 
-            <Button
-              onClick={handleSendNotification}
-              className="w-full md:col-span-2 lg:col-span-1 xl:col-span-1 mt-auto py-2.5 bg-green-600 hover:bg-green-700"
-            >
+            <Button onClick={handleSendNotification} className="bg-green-600 hover:bg-green-700">
               Assign Fee
             </Button>
           </div>
         </CardContent>
       </Card>
-      
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div className="w-full md:w-1/2">
-          <Input
-            type="text"
-            placeholder="Search by user name or email..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-        </div>
 
-        <div className="w-full md:w-auto">
-          <Select value={filterStatus} onValueChange={value => setFilterStatus(value as "all" | "paid" | "unpaid")}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="unpaid">Unpaid</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Search + Filter */}
+      <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
+        <Input
+          type="text"
+          placeholder="Search by user name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+
+        <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as "all" | "paid" | "unpaid")}>
+          <SelectTrigger className="md:w-[200px]">
+            <SelectValue placeholder="Filter by Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="unpaid">Unpaid</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Fee Table */}
-      <Card className="shadow-sm rounded-lg border-gray-100">
+      {/* Table */}
+      <Card>
         <CardContent className="p-0">
           {filteredFees.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
+            <div className="text-center py-10 text-gray-500 bg-gray-50 border border-dashed rounded-lg">
               <Info className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium">No fee assignments found.</p>
-              <p className="text-sm mt-2">Try adjusting your filters or assign a new fee.</p>
+              <p>No fee assignments found.</p>
             </div>
           ) : (
-            <>
-              <div className="overflow-x-auto">
-                <Table className="min-w-full">
-                  <TableHeader className="bg-gray-100">
-                    <TableRow>
-                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-gray-700">User</TableHead>
-                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fee Type</TableHead>
-                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Amount</TableHead>
-                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Due Date</TableHead>
-                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-gray-700 hidden md:table-cell">Branch</TableHead>
-                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</TableHead>
-                      <TableHead className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Action</TableHead>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-gray-100">
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Fee Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Branch</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedFees.map(fee => (
+                    <TableRow key={fee.id}>
+                      <TableCell>{fee.user?.name} ({fee.user?.email})</TableCell>
+                      <TableCell>{fee.fee_type}</TableCell>
+                      <TableCell>₹{fee.amount.toFixed(2)}</TableCell>
+                      <TableCell>{new Date(fee.due_date).toLocaleDateString("en-GB")}</TableCell>
+                      <TableCell>{fee.branch_name || "N/A"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={fee.is_paid ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                        >
+                          {fee.is_paid ? "Paid" : "Unpaid"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          onClick={() => handleTogglePaidStatus(fee.id, fee.is_paid)}
+                          disabled={loadingFeeId === fee.id}
+                          className={fee.is_paid ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-500 hover:bg-green-600"}
+                        >
+                          {loadingFeeId === fee.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : fee.is_paid ? (
+                            "Mark Unpaid"
+                          ) : (
+                            "Mark Paid"
+                          )}
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedFees.map(fee => {
-                      const userDisplay = fee.user ? `${fee.user.name} (${fee.user.email})` : `User ID: ${fee.user_id}`;
-                      return (
-                        <TableRow key={fee.id} className="hover:bg-gray-50 transition-colors duration-150">
-                          <TableCell className="px-4 py-3 font-medium text-gray-800">{userDisplay}</TableCell>
-                          <TableCell className="px-4 py-3 text-gray-700">{fee.fee_type}</TableCell>
-                          <TableCell className="px-4 py-3 text-gray-700">₹{fee.amount.toFixed(2)}</TableCell>
-                          <TableCell className="px-4 py-3 text-gray-700">
-                            {new Date(fee.due_date).toLocaleDateString("en-GB")}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-gray-700 hidden md:table-cell">{fee.branch_name || "N/A"}</TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Badge
-                              variant={fee.is_paid ? "default" : "destructive"}
-                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                fee.is_paid ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {fee.is_paid ? "Paid" : "Unpaid"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Button
-                              onClick={() => handleTogglePaidStatus(fee.id, fee.is_paid)}
-                              className={`px-3 py-1 rounded text-white text-sm ${
-                                fee.is_paid ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-500 hover:bg-green-600"
-                              }`}
-                              size="sm"
-                            >
-                              {fee.is_paid ? "Mark Unpaid" : "Mark Paid"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-3 sm:space-y-0">
-                <div className="text-sm text-gray-600">
-                  Showing {filteredFees.length > 0 ? (currentPage - 1) * feesPerPage + 1 : 0} to {Math.min(currentPage * feesPerPage, filteredFees.length)} of {filteredFees.length} results
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <Button
-                      key={i + 1}
-                      onClick={() => handlePageChange(i + 1)}
-                      className={`px-3 py-1 rounded text-sm ${
-                        currentPage === i + 1 ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                      variant="outline"
-                      size="sm"
-                    >
-                      {i + 1}
-                    </Button>
                   ))}
-                  <Button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

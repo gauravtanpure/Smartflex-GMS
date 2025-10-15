@@ -83,7 +83,7 @@ export default function TrainerAttendance() {
     const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'enrolled', 'pending'
 
     // ✅ NEW STATE: For the "Active Members Only" toggle
-    const [activeMembersOnly, setActiveMembersOnly] = useState(false);
+    const [activeMembersOnly, setActiveMembersOnly] = useState(true);
 
 
     const startCamera = () => {

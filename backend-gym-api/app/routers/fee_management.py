@@ -543,6 +543,8 @@ def create_order(fee_id: int, db: Session = Depends(database.get_db), current_us
 
 #---Payment Gateway Integration
 
+# backend/routers/fees.py (or wherever your router is)
+
 # ✅ Verify Payment
 @router.post("/verify-payment")
 async def verify_payment(request: Request, db: Session = Depends(database.get_db), current_user: schemas.UserResponse = Depends(utils.get_current_user)):
@@ -553,8 +555,11 @@ async def verify_payment(request: Request, db: Session = Depends(database.get_db
     razorpay_signature = data.get("razorpay_signature")
     fee_id = data.get("fee_id")
 
+    if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature, fee_id]):
+        raise HTTPException(status_code=400, detail="Missing payment details in request.")
+
     try:
-        # Verify signature
+        # Step 1: Verify signature (your existing code)
         params_dict = {
             "razorpay_order_id": razorpay_order_id,
             "razorpay_payment_id": razorpay_payment_id,
@@ -562,19 +567,35 @@ async def verify_payment(request: Request, db: Session = Depends(database.get_db
         }
         razorpay_client.utility.verify_payment_signature(params_dict)
 
-        # Update DB fee as paid
+        # --- NEW CODE START ---
+
+        # Step 2: Fetch payment details from Razorpay API
+        payment_details = razorpay_client.payment.fetch(razorpay_payment_id)
+
+        # Step 3: Extract the payment method
+        # The 'method' key will contain 'card', 'upi', 'netbanking', etc.
+        # We use .get() for safety and .capitalize() for consistent formatting.
+        payment_method = payment_details.get('method', 'Online').capitalize()
+
+        # --- NEW CODE END ---
+
+
+        # Step 4: Update DB fee as paid with the correct payment method
         fee = db.query(models.FeeAssignment).filter(models.FeeAssignment.id == fee_id, models.FeeAssignment.user_id == current_user.id).first()
         if not fee:
             raise HTTPException(status_code=404, detail="Fee not found")
 
         fee.is_paid = True
-        fee.payment_type = "Razorpay" # Or another identifier like 'Online'
+        # --- MODIFIED LINE ---
+        # Replace "Razorpay" with the actual method fetched from the API
+        fee.payment_type = payment_method
         db.commit()
 
-        # --- ADDED: Send email after successful online payment ---
+        # Send email after successful online payment
         send_payment_receipt_email(db, fee)
-        # --- END ---
 
         return {"status": "success", "message": "Payment verified and fee updated!"}
-    except:
+    except Exception as e:
+        # It's good practice to log the error
+        print(f"Payment verification failed: {e}")
         raise HTTPException(status_code=400, detail="Payment verification failed.")
