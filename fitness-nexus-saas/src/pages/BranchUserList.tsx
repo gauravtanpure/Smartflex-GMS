@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronDown, ChevronUp, Users, Download, Search } from "lucide-react";
+// ➡️ ADDED ChevronLeft, ChevronRight
+import { ChevronDown, ChevronUp, Users, Download, Search, ChevronLeft, ChevronRight } from "lucide-react"; 
 import { Label } from "@/components/ui/label";
 
 interface EnrolledUser {
@@ -21,22 +22,49 @@ interface EnrolledUser {
   gender: string | null;
   age: number | null;
   profile_picture_url?: string;
+  expiration_days_remaining: number | null;
 }
 
+// ❌ Removed border and background styles to avoid the badge/eclipse look.
 const getStatusTextColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "active":
-      return "text-green-600";
+      return "text-green-700 font-semibold";
     case "inactive":
-      return "text-slate-600";
+      return "text-slate-600 font-semibold";
     case "unpaid fees":
-      return "text-red-600";
+      return "text-red-700 font-semibold";
     case "pending enrollment":
-      return "text-yellow-600";
+      return "text-yellow-700 font-semibold";
     default:
-      return "text-gray-600";
+      return "text-gray-600 font-semibold";
   }
 };
+
+// Helper function to render Expiration status with color coding (no rounded background)
+const ExpirationStatus = ({ days }: { days: number | null }) => {
+  if (days === null) {
+    return <span className="text-gray-500 text-xs md:text-sm">N/A</span>;
+  }
+  
+  // ❌ Removed rounded-full and background colors
+  let className = "font-medium text-xs md:text-sm inline-block min-w-[3rem] text-left";
+  let content = `${days}d`;
+  
+  if (days <= 0) {
+    className = "font-bold text-red-700 text-xs md:text-sm";
+    content = "Expired";
+  } else if (days <= 7) {
+    className = "font-bold text-orange-600 text-xs md:text-sm";
+  } else if (days <= 30) {
+    className = "text-yellow-600 text-xs md:text-sm";
+  } else {
+    className = "text-green-600 text-xs md:text-sm";
+  }
+
+  return <span className={className}>{content}</span>;
+};
+
 
 const BranchUserList = () => {
   const [users, setUsers] = useState<EnrolledUser[]>([]);
@@ -53,6 +81,7 @@ const BranchUserList = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
+    // API call to fetch user data
     axios
       .get(`${import.meta.env.VITE_API_URL}/users/branch-enrollments`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -64,6 +93,7 @@ const BranchUserList = () => {
           opted_plan: user.opted_plan || "Not Enrolled",
           age: user.age || null,
           status: user.status || "Unknown",
+          expiration_days_remaining: user.expiration_days_remaining !== undefined ? user.expiration_days_remaining : null, 
         }));
         setUsers(usersWithDefaults);
         setFilteredUsers(usersWithDefaults);
@@ -72,6 +102,7 @@ const BranchUserList = () => {
   }, []);
 
   useEffect(() => {
+    // Filtering logic
     let filtered = users.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()));
 
     if (genderFilter !== "All") filtered = filtered.filter((u) => u.gender === genderFilter);
@@ -79,6 +110,7 @@ const BranchUserList = () => {
     if (statusFilter !== "All") filtered = filtered.filter((u) => u.status === statusFilter);
     if (ageFilter > 0) filtered = filtered.filter((u) => u.age && u.age >= ageFilter);
 
+    // Sorting logic
     filtered.sort((a, b) => sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
 
     setFilteredUsers(filtered);
@@ -87,18 +119,20 @@ const BranchUserList = () => {
 
   const downloadCSV = () => {
     const csvRows = [
-      ["User ID", "Name", "Date Joined", "Opted Plan", "Status", "Gender", "Age"],
+      ["User ID", "Name", "Status", "Expiration Days", "Opted Plan", "Date Joined", "Gender", "Age"],
       ...filteredUsers.map((u) => [
         u.user_id,
         u.name,
-        u.date_joined ? new Date(u.date_joined).toLocaleDateString() : "-",
-        u.opted_plan,
         u.status,
+        u.expiration_days_remaining !== null ? u.expiration_days_remaining.toString() : "N/A",
+        u.opted_plan,
+        u.date_joined ? new Date(u.date_joined).toLocaleDateString() : "-",
         u.gender,
         u.age ? u.age.toString() : "N/A",
       ]),
     ];
-    const blob = new Blob([csvRows.map((e) => e.join(",")).join("\n")], { type: "text/csv;charset=utf-8;" });
+    const csvString = csvRows.map((e) => e.map(item => `"${item}"`).join(",")).join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -121,15 +155,15 @@ const BranchUserList = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
-          <h1 className="text-2xl text-gray-800 logoOrange">Branch Members</h1>
+          <h1 className="text-2xl font-bold text-gray-800 logoOrange">Branch Members</h1>
           <p className="text-sm text-gray-500 mt-1">Manage and view all enrolled members in this branch.</p>
         </div>
         <div className="flex items-center space-x-2 mt-4 md:mt-0">
-          <Badge variant="outline" className="flex items-center space-x-2 py-2 px-3 text-sm font-semibold border-gray-300">
+          <Badge variant="outline" className="flex items-center space-x-2 py-2 px-3 text-sm font-semibold border-gray-300 text-gray-700 bg-white">
             <Users className="h-4 w-4 text-gray-600" />
             <span>Total: {users.length}</span>
           </Badge>
-          <Button onClick={downloadCSV} variant="outline" size="sm">
+          <Button onClick={downloadCSV} variant="outline" size="sm" className="shadow-sm">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -137,7 +171,7 @@ const BranchUserList = () => {
       </div>
       
       {/* Filters and Search Card */}
-      <Card className="mb-6 shadow-sm border border-gray-200">
+      <Card className="mb-6 shadow-md border border-gray-100">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="relative w-full md:w-2/5">
@@ -147,43 +181,43 @@ const BranchUserList = () => {
                 placeholder="Search by member name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-9 w-full focus:ring-1 focus:ring-orange-500"
               />
             </div>
             <Button
               variant="ghost"
               onClick={() => setShowFilters(!showFilters)}
-              className="w-full md:w-auto text-sm"
+              className="w-full md:w-auto text-sm text-gray-700 hover:bg-gray-50"
             >
               {showFilters ? "Hide Advanced Filters" : "Show Advanced Filters"}
               {showFilters ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
             </Button>
           </div>
           {showFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 mt-4 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 mt-4 border-t border-gray-100">
               <div className="space-y-1.5">
-                <Label htmlFor="status-filter">Status</Label>
+                <Label htmlFor="status-filter" className="text-gray-600">Status</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger id="status-filter"><SelectValue placeholder="Filter by Status" /></SelectTrigger>
                   <SelectContent>{uniqueStatuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="plan-filter">Plan</Label>
+                <Label htmlFor="plan-filter" className="text-gray-600">Plan</Label>
                 <Select value={planFilter} onValueChange={setPlanFilter}>
                   <SelectTrigger id="plan-filter"><SelectValue placeholder="Filter by Plan" /></SelectTrigger>
                   <SelectContent>{uniquePlans.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="gender-filter">Gender</Label>
+                <Label htmlFor="gender-filter" className="text-gray-600">Gender</Label>
                 <Select value={genderFilter} onValueChange={setGenderFilter}>
                   <SelectTrigger id="gender-filter"><SelectValue placeholder="Filter by Gender" /></SelectTrigger>
                   <SelectContent>{uniqueGenders.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="sort-order">Sort By Name</Label>
+                <Label htmlFor="sort-order" className="text-gray-600">Sort By Name</Label>
                 <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "asc" | "desc")}>
                   <SelectTrigger id="sort-order"><SelectValue placeholder="Sort Order" /></SelectTrigger>
                   <SelectContent>
@@ -198,49 +232,65 @@ const BranchUserList = () => {
       </Card>
 
       {/* User Table Card */}
-      <Card className="shadow-sm border border-gray-200">
-        <Table>
-          <TableHeader className="bg-gray-100">
-            <TableRow>
-              <TableHead className="w-[35%]">Member</TableHead>
-              <TableHead className="hidden lg:table-cell">Status</TableHead>
-              <TableHead className="hidden sm:table-cell">Opted Plan</TableHead>
-              <TableHead className="hidden md:table-cell">Date Joined</TableHead>
-              <TableHead className="text-right hidden md:table-cell">Age</TableHead>
+      <Card className="shadow-md border border-gray-100 overflow-x-auto">
+        <Table className="min-w-full">
+          <TableHeader className="bg-gray-50">
+            <TableRow className="border-b border-gray-200">
+              {/* Optimized Column Widths for Mobile/Desktop Responsiveness */}
+              <TableHead className="w-[45%] sm:w-[30%] text-gray-600 font-semibold">Member</TableHead>
+              <TableHead className="w-[25%] sm:w-[15%] text-left text-gray-600 font-semibold">Status</TableHead>
+              <TableHead className="w-[30%] sm:w-[15%] text-left text-gray-600 font-semibold">Expiring</TableHead>
+              <TableHead className="w-[15%] hidden sm:table-cell text-left text-gray-600 font-semibold">Plan</TableHead>
+              <TableHead className="hidden md:table-cell w-[15%] text-right text-gray-600 font-semibold">Joined</TableHead>
+              <TableHead className="text-right hidden lg:table-cell w-[10%] text-gray-600 font-semibold">Age</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentUsers.length > 0 ? (
               currentUsers.map((user) => (
-                <TableRow key={user.user_id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
+                <TableRow key={user.user_id} className="hover:bg-gray-50 border-b border-gray-100">
+                  <TableCell className="py-3 px-2 sm:px-4">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <Avatar className="h-9 w-9 border border-gray-200">
                         <AvatarImage src={user.profile_picture_url} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="bg-orange-100 text-orange-600 font-medium">{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      <span className="font-medium text-gray-800">{user.name}</span>
+                      <span className="font-medium text-gray-800 text-sm">{user.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <span className={`font-semibold ${getStatusTextColor(user.status)}`}>
-                      {user.status}
+
+                  {/* Status (Visible on all screens) - Now just colored text */}
+                  <TableCell className="py-3 px-2 sm:px-4 text-left">
+                    <span className={`text-xs ${getStatusTextColor(user.status)}`}>
+                      {user.status.replace(" ", "\u00A0")}
                     </span>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell text-gray-600">
+
+                  {/* Expiration (Visible on all screens) - Now just colored text */}
+                  <TableCell className="py-3 px-2 sm:px-4 text-left">
+                    <ExpirationStatus days={user.expiration_days_remaining} />
+                  </TableCell>
+                  
+                  {/* Opted Plan (Visible on sm and up) */}
+                  <TableCell className="py-3 px-2 sm:px-4 hidden sm:table-cell text-gray-600 text-sm">
                     {user.opted_plan}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-gray-600">
+
+                  {/* Date Joined (Visible on md and up) - Right aligned */}
+                  <TableCell className="py-3 px-2 sm:px-4 hidden md:table-cell text-gray-600 text-sm text-right">
                     {user.date_joined ? new Date(user.date_joined).toLocaleDateString() : "—"}
                   </TableCell>
-                  <TableCell className="text-right hidden md:table-cell text-gray-600">
+
+                  {/* Age (Visible on lg and up) - Right aligned */}
+                  <TableCell className="py-3 px-2 sm:px-4 text-right hidden lg:table-cell text-gray-600 text-sm">
                     {user.age || "—"}
                   </TableCell>
+
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-48 text-center">
+                <TableCell colSpan={6} className="h-48 text-center">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <Search className="h-10 w-10 text-gray-400" />
                     <p className="font-semibold text-gray-700">No Members Found</p>
@@ -255,30 +305,38 @@ const BranchUserList = () => {
         </Table>
       </Card>
 
-      {/* ✨ MODIFIED: Pagination is now always visible */}
-      <div className="flex justify-between items-center gap-4 mt-6">
-        <div className="text-sm text-gray-600">
-          Showing <strong>{filteredUsers.length > 0 ? startIndex + 1 : 0}</strong> to <strong>{Math.min(startIndex + itemsPerPage, filteredUsers.length)}</strong> of <strong>{filteredUsers.length}</strong> results
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-            variant="outline" size="sm"
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-gray-700 font-medium">
+      {/* ➡️ Pagination Controls (SuperadminBilling Style) */}
+      <div className="flex items-center justify-between mt-6">
+        {/* Previous Button */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage((p) => p - 1)} 
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+        </Button>
+        
+        {/* Page Count and Results Count (Center) */}
+        <div className="flex flex-col items-center text-center">
+          <div className="text-sm text-gray-700 font-medium">
             Page {totalPages > 0 ? currentPage : 0} of {totalPages > 0 ? totalPages : 0}
-          </span>
-          <Button
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-            variant="outline" size="sm"
-          >
-            Next
-          </Button>
+          </div>
+          {/* Results count text for better context */}
+          <div className="text-xs text-gray-500 mt-0.5 hidden sm:block"> 
+            Showing <strong>{filteredUsers.length > 0 ? startIndex + 1 : 0}</strong> to <strong>{Math.min(startIndex + itemsPerPage, filteredUsers.length)}</strong> of <strong>{filteredUsers.length}</strong> results
+          </div>
         </div>
+
+        {/* Next Button */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage((p) => p + 1)} 
+          disabled={currentPage >= totalPages}
+        >
+          Next <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
       </div>
     </div>
   );

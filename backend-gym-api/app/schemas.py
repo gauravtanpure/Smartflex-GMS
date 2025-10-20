@@ -394,6 +394,7 @@ class EnrolledUserInfo(BaseModel):
     status: Optional[str]
     gender: Optional[str]
     age: Optional[int]
+    expiration_days_remaining: Optional[int] = None # ⬅️ ADDED
 
     class Config:
         from_attributes = True
@@ -425,4 +426,3 @@ class PTORequestResponse(BaseModel):
 
     class Config:
         from_attributes = True
-

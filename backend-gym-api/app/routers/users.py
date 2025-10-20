@@ -130,8 +130,6 @@ def get_branch_enrollments(
     if not current_admin.branch:
         raise HTTPException(status_code=400, detail="Branch not specified for the current user.")
 
-    # 🔽 START OF MODIFICATION
-
     # 1. Modified Query: Joined MembershipPlan to get plan duration
     users_data = (
         db.query(models.User, models.Member, models.FeeAssignment, models.MembershipPlan)
@@ -168,6 +166,9 @@ def get_branch_enrollments(
 
         # 3. New Status Logic: Check for expiration
         status_text = "Pending Enrollment"
+        # 🔽 START OF MODIFICATION
+        expiration_days_remaining = None # ⬅️ Initialize new variable
+
         if fee_assignment:
             if not fee_assignment.is_paid:
                 status_text = "Unpaid Fees"
@@ -175,6 +176,10 @@ def get_branch_enrollments(
                 start_date = fee_assignment.created_at.date()
                 duration_months = plan.duration_months
                 expiration_date = start_date + relativedelta(months=+duration_months)
+                
+                # ⬅️ Calculate days remaining
+                time_until_expiration = expiration_date - date.today()
+                expiration_days_remaining = max(0, time_until_expiration.days) # Ensure it's not negative
 
                 if date.today() > expiration_date:
                     status_text = "Inactive" # Set status to Inactive if expired
@@ -194,6 +199,7 @@ def get_branch_enrollments(
             "gender": gender,
             "age": age,
             "role": role,
+            "expiration_days_remaining": expiration_days_remaining, # ⬅️ ADDED
         }
 
         result.append(schemas.EnrolledUserInfo(**user_data_for_schema))

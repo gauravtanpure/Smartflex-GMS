@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, ChevronLeft, ChevronRight, Info, Loader2 } from "lucide-react";
+// ChevronLeft, ChevronRight were already correctly imported here
+import { Download, ChevronLeft, ChevronRight, Info, Loader2 } from "lucide-react"; 
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -47,9 +48,9 @@ export default function ManageFees() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [form, setForm] = useState({ user_id: "", plan_id: "", fee_type: "", amount: "", due_date: "" });
   const [searchQuery, setSearchQuery] = useState("");
-  const [userSearch, setUserSearch] = useState(""); // 🔍 Added user search
+  const [userSearch, setUserSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "unpaid">("all");
-  const [loadingFeeId, setLoadingFeeId] = useState<number | null>(null); // ⏳ Loader for status update
+  const [loadingFeeId, setLoadingFeeId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,7 +83,6 @@ export default function ManageFees() {
     fetchBranchFees();
   }, [token]);
 
-  // 🧭 Fixed search functionality
   useEffect(() => {
     const timeout = setTimeout(() => {
       fetchBranchFees();
@@ -105,6 +105,7 @@ export default function ManageFees() {
         );
       });
       setFees(filtered);
+      setCurrentPage(1); // Reset to first page on new fetch/search
     } catch {
       toast({
         title: "Error",
@@ -166,7 +167,6 @@ export default function ManageFees() {
     }
   };
 
-  // ⏳ Added loader here
   const handleTogglePaidStatus = async (feeId: number, currentStatus: boolean) => {
     setLoadingFeeId(feeId);
     try {
@@ -232,12 +232,14 @@ export default function ManageFees() {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  // 🔍 Filter users for user search
   const filteredUsers = users.filter(u =>
     u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearch.toLowerCase())
   );
-
+  
+  // Variables for pagination display count
+  const startIndex = (currentPage - 1) * feesPerPage;
+  
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 font-poppins">
       {/* Header */}
@@ -255,7 +257,7 @@ export default function ManageFees() {
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {/* 🔍 Added search box for user dropdown */}
+            {/* Search box for user dropdown */}
             <div className="space-y-1">
               <Label htmlFor="user-search">Search User</Label>
               <Input
@@ -401,6 +403,41 @@ export default function ManageFees() {
           )}
         </CardContent>
       </Card>
+
+      {/* ➡️ Pagination Controls (SuperadminBilling Style) */}
+      <div className="flex items-center justify-between mt-6">
+        {/* Previous Button */}
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+        </Button>
+        
+        {/* Page Count and Results Count (Center) */}
+        <div className="flex flex-col items-center text-center">
+          <div className="text-sm text-gray-700 font-medium">
+            Page {totalPages > 0 ? currentPage : 0} of {totalPages > 0 ? totalPages : 0}
+          </div>
+          {/* Results count text for better context */}
+          <div className="text-xs text-gray-500 mt-0.5 hidden sm:block"> 
+            Showing <strong>{filteredFees.length > 0 ? startIndex + 1 : 0}</strong> to <strong>{Math.min(startIndex + feesPerPage, filteredFees.length)}</strong> of <strong>{filteredFees.length}</strong> results
+          </div>
+        </div>
+
+        {/* Next Button */}
+        <Button
+          variant="outline" 
+          size="sm"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages}
+        >
+          Next <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+      
     </div>
   );
 }
